@@ -13,6 +13,10 @@ app.get('/', (req, res) => {
     res.send('テストホームページ');
 });
 
+app.get('/index', (req, res) => {
+    res.render('index');
+});
+
 app.use((req, res) => {
     res.send('404ページ');
 });
