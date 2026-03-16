@@ -1,4 +1,18 @@
 <% layout('layout/boilerplates') %>
 
-<h1>indexページ</h1>
-<button class="btn btn-primary">読み込み成功!!</button>
+<h1>新しいルームを作成</h1>
+
+<p>ホスト用URL:</p>
+<input type="text" class="form-control" value="http://localhost:3000/room/<%= roomId %>/host" readonly>
+<button class="btn btn-primary mt-2" id="copyBtn">URLをコピー</button>
+
+<p>参加者招待URL</p>
+<input type="text" class="form-control" value="http://localhost:3000/room/<%= roomId %>" readonly>
+<button class="btn btn-primary mt-2" id="copyBtn">URLをコピー</button>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    console.log('Socket.io読み込み完了');
+</script>

@@ -1,0 +1,26 @@
+<% layout('layout/boilerplates') %>
+
+<h1>ホスト画面</h1>
+<p>ルームID: <%= roomId %></p>
+<p>参加人数: <span id="count">0</span>人</p>
+<button class="btn btn-primary" id="startBtn">スタート</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const roomId = '<%= roomId %>';
+
+    socket.emit('joinRoom', roomId);
+
+    socket.on('updateCount', (count) => {
+        document.getElementById('count').textContent = count;
+    });
+
+    socket.on('redirect', (url) => {
+        window.location.href = url;
+    });
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+        socket.emit('start', roomId);
+    });
+</script>
