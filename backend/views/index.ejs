@@ -1,7 +1,12 @@
 <% layout('layout/boilerplates') %>
 
 <h1>新しいルームを作成</h1>
-<p>招待URL</p>
+
+<p>ホスト用URL:</p>
+<input type="text" class="form-control" value="http://localhost:3000/room/<%= roomId %>/host" readonly>
+<button class="btn btn-primary mt-2" id="copyBtn">URLをコピー</button>
+
+<p>参加者招待URL</p>
 <input type="text" class="form-control" value="http://localhost:3000/room/<%= roomId %>" readonly>
 <button class="btn btn-primary mt-2" id="copyBtn">URLをコピー</button>
 

@@ -19,6 +19,20 @@ app.get('/', (req, res) => {
     res.render('index', { roomId });
 });
 
+app.get('/room/:roomId/host', (req, res) => {
+    const roomId = req.params.roomId;
+    res.render('host', { roomId });
+})
+
+app.get('/room/:roomId', (req, res) => {
+    const roomId = req.params.roomId;
+    res.render('lobby', { roomId });
+});
+
+app.get('/dialog', (req, res) => {
+    res.render('dialog');
+});
+
 app.get('/index', (req, res) => {
     res.render('index');
 });
@@ -29,6 +43,17 @@ app.use((req, res) => {
 
 io.on('connection', (socket) => {
     console.log('接続されました:', socket.id);
+
+    socket.on('joinRoom', (roomId) => {
+        socket.join(roomId);
+        console.log(`${socket.id}がルーム ${roomId} に参加しました`);
+
+        io.to(roomId).emit('updateCount', io.sockets.adapter.rooms.get(roomId).size);
+    });
+
+    socket.on('start', (roomId) => {
+        io.to(roomId).emit('redirect', '/dialog');
+    });
 
     socket.on('disconnect', () => {
         console.log('切断されました:', socket.id);
