@@ -1,9 +1,13 @@
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+
 const express = require('express');
 const engine = require('ejs-mate');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const http = require('http');
 const { Server } = require('socket.io');
+const session = require('express-session');
+const { createSession, getSession, deleteSession, startChat, sendMessage } = require('./services/geminiClient');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,6 +17,13 @@ app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(express.json());
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true
+}));
 
 app.get('/', (req, res) => {
     const roomId = uuidv4();
@@ -29,8 +40,18 @@ app.get('/room/:roomId', (req, res) => {
     res.render('lobby', { roomId });
 });
 
-app.get('/dialog', (req, res) => {
-    res.render('dialog');
+app.get('/dialog', async (req, res) => {
+    const socketId = req.query.socketId;
+    
+    await createSession(socketId);
+    res.render('dialog', { socketId });
+});
+
+app.post('/dialog/message', async (req, res) => {
+    const { socketId, message } = req.body;
+    
+    const reply = await sendMessage(socketId, message);
+    res.json({ reply });
 });
 
 app.get('/index', (req, res) => {
@@ -53,6 +74,10 @@ io.on('connection', (socket) => {
 
     socket.on('start', (roomId) => {
         io.to(roomId).emit('redirect', '/dialog');
+    });
+
+    socket.on('initDialog', async () => {
+        await createSession(socket.id);
     });
 
     socket.on('disconnect', () => {

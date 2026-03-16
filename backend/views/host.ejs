@@ -17,7 +17,7 @@
     });
 
     socket.on('redirect', (url) => {
-        window.location.href = url;
+        window.location.href = url + '?socketId=' + socket.id;
     });
 
     document.getElementById('startBtn').addEventListener('click', () => {

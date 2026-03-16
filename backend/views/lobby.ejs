@@ -15,6 +15,6 @@
     });
 
     socket.on('redirect', (url) => {
-        window.location.href = url;
+        window.location.href = url + '?socketId=' + socket.id;
     });
 </script>
