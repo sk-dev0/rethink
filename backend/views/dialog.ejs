@@ -2,3 +2,34 @@
 
 <h1>対話フェーズ</h1>
 <p>1対1対話画面です</p>
+
+<div>
+    <div id="message"></div>
+    <input type="text" id="messageInput">
+    <button class="btn btn-primary" id="sendBtn">送信</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+    socket.on('connect', () => {
+        socket.emit('initDialog');
+    });
+
+    document.getElementById('sendBtn').addEventListener('click', async () => {
+        const message = document.getElementById('messageInput').value;
+        
+        const socketId = socket.id;
+
+        const response = await fetch('/dialog/message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ socketId, message })
+        });
+
+        const data = await response.json();
+        document.getElementById('message').textContent = data.reply;
+    })
+     
+</script>
