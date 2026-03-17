@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const http = require('http');
 const { Server } = require('socket.io');
 const session = require('express-session');
-const { createSession, getSession, deleteSession, startChat, sendMessage } = require('./services/geminiClient');
+const { createSession, getSession, deleteSession, startChat, sendMessage, generateProfile } = require('./services/geminiClient');
 
 const app = express();
 const server = http.createServer(app);
@@ -54,6 +54,15 @@ app.post('/dialog/message', async (req, res) => {
     res.json({ reply });
 });
 
+app.post('/dialog/profile', async (req, res) => {
+    const { socketId, history } = req.body;
+    const profile = await generateProfile(socketId, history);
+    req.session.profile = profile;
+    res.json({ profile });
+    // 開発中は残しておく。本番ではこのログは消す
+    console.log('プロファイル生成完了:', profile);
+});
+
 app.get('/index', (req, res) => {
     res.render('index');
 });
@@ -77,7 +86,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('initDialog', async () => {
-        await createSession(socket.id);
+        // 第2引数のテーマは現在は仮のテーマにしている
+        await createSession(socket.id, '夜ご飯は何にするか');
+        // 対話を始めるためのイベント
+        socket.emit('dialogReady');
     });
 
     socket.on('disconnect', () => {

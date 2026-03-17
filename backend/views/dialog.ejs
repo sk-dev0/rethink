@@ -1,35 +1,113 @@
 <% layout('layout/boilerplates') %>
 
-<h1>対話フェーズ</h1>
-<p>1対1対話画面です</p>
+<div class="container mt-4">
+    <h4 class="text-center mb-3">対話フェーズ</h4>
 
-<div>
-    <div id="message"></div>
-    <input type="text" id="messageInput">
-    <button class="btn btn-primary" id="sendBtn">送信</button>
+    <div id="waitingAlert" class="alert alert-info text-center mb-2">
+        AIが準備中です。しばらくお待ちください...
+    </div>
+
+    <div class="border rounded d-flex flex-column" style="height: 70vh">
+        <div id="messages" class="flex-grow-1 overflow-auto p-3 bg-light d-flex flex-column gap-2"></div>
+        <div class="d-flex p-2 border-top gap-2">
+            <input type="text" id="messageInput" class="form-control rounded-pill" placeholder="メッセージを入力..." disabled>
+            <button class="btn btn-primary rouned-pill px-4" id="sendBtn" disabled>送信</button>
+        </div>
+    </div>
+    <div class="d-flex justify-content-end mt-2">
+        <button class="btn btn-danger rounded-pill px-4" id="endBtn" disabled>対話を終了する</button>
+    </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+    // サーバとSocket.ioの接続を確立
+    // この時点でsocket.idが割り当てられる
     const socket = io();
 
+    // 接続が完了したらサーバにgeminiセッションの初期化を依頼
+    // initDialogイベントはserver.jsに記載あり
     socket.on('connect', () => {
         socket.emit('initDialog');
     });
 
+    // 対話開始イベントを受け取ったらgeminiから対話を始める
+    socket.on('dialogReady', async () => {
+        const response = await fetch('/dialog/message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ socketId: socket.id, message: 'インタビューを始めてください' })
+        });
+
+        const data = await response.json();
+        addMessage(data.reply, 'ai');
+
+        // AIが準備完了するとアラートを消し、送信を有効にする
+        document.getElementById('waitingAlert').style.display = 'none';
+        document.getElementById('sendBtn').disabled = false;
+        document.getElementById('messageInput').disabled = false;
+    })
+
+    // 会話履歴をフロント側で持つための配列
+    const history = [];
+
+    // メッセージをチャット画面に追加する関数
+    // senderがuserなら右側に青色背景、aiなら左側に灰色背景で表示
+    function addMessage(text, sender) {
+        const messages = document.getElementById('messages');
+        const div = document.createElement('div');
+        div.classList.add('p-2', 'px-3', 'rounded-4');
+        div.style.maxWidth = '70%';
+        div.textContent = text;
+        if (sender === 'user') {
+            div.classList.add('bg-primary', 'text-white', 'align-self-end');
+        } else {
+            div.classList.add('bg-secondary-subtle', 'align-self-start');
+        }
+        messages.appendChild(div);
+        // 新しいメッセージが追加されたら一番下にスクロールする
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    // ボタンが押されたら入力内容を取り出して、socketIdと一緒にdialog/messageルートへpostリクエストを投げる
+    // 返答をjsonで受け取ってその内容をaddMessegeで表示する
     document.getElementById('sendBtn').addEventListener('click', async () => {
-        const message = document.getElementById('messageInput').value;
-        
-        const socketId = socket.id;
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        if (!message) return;
+
+        addMessage(message, 'user');
+        // userの入力を会話履歴に追加
+        history.push({ role: 'user', text: message });
+        input.value = '';
 
         const response = await fetch('/dialog/message', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ socketId, message })
+            body: JSON.stringify({ socketId: socket.id, message })
         });
 
         const data = await response.json();
-        document.getElementById('message').textContent = data.reply;
+        addMessage(data.reply, 'ai');
+        // aiの返答を会話履歴に追加
+        history.push({ role: 'ai', text: data.reply });
+
+        // 終了条件 (いまここではgeminiが判断して、「インタビューを終了します」という文字が含まれた時)
+        if (data.reply.includes('インタビューを終了します')) {
+            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('endBtn').disabled = false;
+        }
+    });
+
+    // 対話終了ボタンが押されたときの処理
+    document.getElementById('endBtn').addEventListener('click', async () => {
+        const response = await fetch('/dialog/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ socketId: socket.id, history })
+        });
+
+        const data = await response.json();
     })
      
 </script>
