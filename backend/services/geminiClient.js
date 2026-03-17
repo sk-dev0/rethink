@@ -165,13 +165,7 @@ const callGeminiWithRetry = async (contents, maxRetries = 3, enableSearch = fals
  * @returns {Promise<string|null>} 最終的なテキスト
  */
 const callGeminiWithRetryForSearchQuote = async (text, contents) => {
-    const hasSearchCitation = text && (
-        text.includes('検索取得:') ||
-        text.includes('http') ||
-        text.includes('出典') ||
-        text.includes('[') ||
-        text.includes('参照')
-    );
+    const hasSearchCitation = text && text.includes('検索取得:');
 
     if (hasSearchCitation) return text;
 

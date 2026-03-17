@@ -45,15 +45,18 @@ const runDebate = async (topic, agents, maxTurns) => {
     // フェーズ1: 立場表明
     // =============================
     console.log('[Phase1] 立場表明 開始');
-    const phase1Results = [];
-
-    for (const agent of agents) {
-        const prompt = buildPhase1Prompt(agent);
-        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-        const text = await callGeminiWithRetry(contents);
-        phase1Results.push({ label: agent.label, text: text || '（生成失敗）' });
-        await delay(1000);
-    }
+    const phase1Results = (await Promise.allSettled(
+        agents.map(async (agent) => {
+            const prompt = buildPhase1Prompt(agent);
+            const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+            const text = await callGeminiWithRetry(contents);
+            return { label: agent.label, text: text || '（生成失敗）' };
+        })
+    )).map((r, i) =>
+        r.status === 'fulfilled'
+            ? r.value
+            : { label: agents[i].label, text: '（生成失敗）' }
+    );
     console.log('[Phase1] 完了');
 
     // =============================
@@ -63,16 +66,19 @@ const runDebate = async (topic, agents, maxTurns) => {
 
     // Step 1: 全エージェントのウェブ検索による情報取得
     console.log('[Phase2-Step1] 情報取得');
-    const phase2Research = [];
-
-    for (const agent of agents) {
-        const otherAgents = agents.filter(a => a.label !== agent.label);
-        const prompt = buildPhase2Step1Prompt(agent, otherAgents);
-        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-        const text = await callGeminiWithRetry(contents, 3, true);
-        phase2Research.push({ label: agent.label, text: text || '（情報取得失敗）' });
-        await delay(1000);
-    }
+    const phase2Research = (await Promise.allSettled(
+        agents.map(async (agent) => {
+            const otherAgents = agents.filter(a => a.label !== agent.label);
+            const prompt = buildPhase2Step1Prompt(agent, otherAgents);
+            const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+            const text = await callGeminiWithRetry(contents, 3, true);
+            return { label: agent.label, text: text || '（情報取得失敗）' };
+        })
+    )).map((r, i) =>
+        r.status === 'fulfilled'
+            ? r.value
+            : { label: agents[i].label, text: '（情報取得失敗）' }
+    );
 
     // Step 2: 信頼性検証（中立AIが一回だけ実行）
     console.log('[Phase2-Step2] 信頼性検証');
@@ -81,29 +87,28 @@ const runDebate = async (topic, agents, maxTurns) => {
 
     // Step 3: 全対全反論（N×(N-1)通り）
     console.log('[Phase2-Step3] 全対全反論');
-    const phase2Rebuttals = [];
-
-    for (const attacker of agents) {
-        const attackerResearch = phase2Research.find(r => r.label === attacker.label);
-        const attackerInfo = {
-            ...attacker,
-            researchText: attackerResearch ? attackerResearch.text : '',
-        };
-
-        for (const defender of agents) {
-            if (attacker.label === defender.label) continue;
-
+    const rebuttalPairs = agents.flatMap(attacker =>
+        agents
+            .filter(defender => attacker.label !== defender.label)
+            .map(defender => ({ attacker, defender }))
+    );
+    const phase2Rebuttals = (await Promise.allSettled(
+        rebuttalPairs.map(async ({ attacker, defender }) => {
+            const attackerResearch = phase2Research.find(r => r.label === attacker.label);
+            const attackerInfo = {
+                ...attacker,
+                researchText: attackerResearch ? attackerResearch.text : '',
+            };
             const prompt = buildPhase2Step3Prompt(attackerInfo, defender, credibilityText);
             const contents = [{ role: 'user', parts: [{ text: prompt }] }];
             const text = await callGeminiWithRetry(contents);
-            phase2Rebuttals.push({
-                attacker: attacker.label,
-                defender: defender.label,
-                text: text || '（反論生成失敗）',
-            });
-            await delay(1000);
-        }
-    }
+            return { attacker: attacker.label, defender: defender.label, text: text || '（反論生成失敗）' };
+        })
+    )).map((r, i) =>
+        r.status === 'fulfilled'
+            ? r.value
+            : { attacker: rebuttalPairs[i].attacker.label, defender: rebuttalPairs[i].defender.label, text: '（反論生成失敗）' }
+    );
 
     // Step 4: サブ議題抽出と要素分解
     console.log('[Phase2-Step4] サブ議題抽出');
@@ -185,30 +190,36 @@ const runDebate = async (topic, agents, maxTurns) => {
 
     // Step 1 ターン1: 全エージェントが独立に統合表明
     console.log('[Phase4-Step1-Turn1] 統合表明ターン1');
-    const phase4Turn1 = [];
+    const phase4Turn1 = (await Promise.allSettled(
+        agents.map(async (agent) => {
+            const prompt = buildPhase4Step1Prompt(agent, subTopicSummariesText, []);
+            const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+            const text = await callGeminiWithRetry(contents);
+            return { label: agent.label, text: text || '（生成失敗）' };
+        })
+    )).map((r, i) =>
+        r.status === 'fulfilled'
+            ? r.value
+            : { label: agents[i].label, text: '（生成失敗）' }
+    );
 
-    for (const agent of agents) {
-        const prompt = buildPhase4Step1Prompt(agent, subTopicSummariesText, []);
-        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-        const text = await callGeminiWithRetry(contents);
-        phase4Turn1.push({ label: agent.label, text: text || '（生成失敗）' });
-        await delay(1000);
-    }
-
-    // Step 1 ターン2: 全エージェントがターン1の他エージェント発言を参照して統合表明
+    // Step 1 ターン2: 全エージェントがターン1の完成済み結果を参照して同時に統合表明
     console.log('[Phase4-Step1-Turn2] 統合表明ターン2');
-    const phase4Turn2 = [];
-
-    for (const agent of agents) {
-        const otherTurn1Texts = phase4Turn1
-            .filter(u => u.label !== agent.label)
-            .map(u => `${u.label}の統合表明: ${u.text}`);
-        const prompt = buildPhase4Step1Prompt(agent, subTopicSummariesText, otherTurn1Texts);
-        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-        const text = await callGeminiWithRetry(contents);
-        phase4Turn2.push({ label: agent.label, text: text || '（生成失敗）' });
-        await delay(1000);
-    }
+    const phase4Turn2 = (await Promise.allSettled(
+        agents.map(async (agent) => {
+            const otherTurn1Texts = phase4Turn1
+                .filter(u => u.label !== agent.label)
+                .map(u => `${u.label}の統合表明: ${u.text}`);
+            const prompt = buildPhase4Step1Prompt(agent, subTopicSummariesText, otherTurn1Texts);
+            const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+            const text = await callGeminiWithRetry(contents);
+            return { label: agent.label, text: text || '（生成失敗）' };
+        })
+    )).map((r, i) =>
+        r.status === 'fulfilled'
+            ? r.value
+            : { label: agents[i].label, text: '（生成失敗）' }
+    );
 
     // Step 2: 最終まとめ（中立AIが一回だけ生成）
     console.log('[Phase4-Step2] 最終まとめ生成');
@@ -269,8 +280,8 @@ const processSubTopic = async (subTopic, agents, maxTurns) => {
 
                 let text = await callGeminiWithRetry(contents, 3, attackMode === 'α');
 
-                // αとγの攻撃モードで検索引用がない場合は再呼び出し
-                if (attackMode === 'α' || attackMode === 'γ') {
+                // αの攻撃モードで検索引用がない場合は再呼び出し
+                if (attackMode === 'α') {
                     text = await callGeminiWithRetryForSearchQuote(text, contents);
                 }
 
