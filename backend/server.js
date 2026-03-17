@@ -58,6 +58,8 @@ app.post('/dialog/profile', async (req, res) => {
     const { socketId, history } = req.body;
     const profile = await generateProfile(socketId, history);
     req.session.profile = profile;
+    //ユーザーが増え続ける限り、チャットのキャッシュが残り続けるため削除する。
+    deleteSession(socketId);
     res.json({ profile });
     // 開発中は残しておく。本番ではこのログは消す
     console.log('プロファイル生成完了:', profile);
@@ -94,6 +96,8 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('切断されました:', socket.id);
+        //インタビュー途中で切断した場合も会話キャッシュを消すように
+        deleteSession(socket.id); 
     });
 });
 
