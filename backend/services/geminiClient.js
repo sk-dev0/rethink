@@ -27,6 +27,7 @@ const deleteSession = (socketId) => {
     delete chatSessions[socketId];
 };
 
+
 // インタビュアーAIに与えるシステムインストラクション
 // システムインストラクションはカスタム指示みたいに常に与えておくプロンプトみたいなものらしい
 const systemInstruction = (theme) => `
@@ -59,8 +60,9 @@ const systemInstruction = (theme) => `
     - 参加者の発言を否定しないでください
 `;
 
+// chat.createは非同期関数ではないのでasync不要
 // systemInstructionとthemeをもとにchatオブジェクトを作成して返す関数
-const startChat = async (theme) => {
+const startChat =  (theme) => {
     const chat = ai.chats.create({
         model: 'gemini-2.5-flash',
         config: {
@@ -73,7 +75,11 @@ const startChat = async (theme) => {
 // socketIdをキーにchatSessionsからchatオブジェクトを取り出す
 // GeminiのAPIにメッセージを送り、返答のテキストを返す
 const sendMessage = async (socketId, message) => {
+    //getSessionがsocketIdを見つけられなかった際のエラーハンドリングを追加
     const chat = getSession(socketId);
+    if (!chat) {
+        throw new Error(`ソケットIDが見つかりませんでした。socketId: ${socketId}`);
+    }
     const result = await chat.sendMessage({ message });
     return result.text;
 }
