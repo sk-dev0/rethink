@@ -1,0 +1,36 @@
+<% layout('layout/boilerplates') %>
+
+<h1>待機中</h1>
+<p>完了人数: <span id="count">0</span>人</p>
+<% if (isHost) { %>
+    <button class="btn btn-primary" id="startBtn" disabled>議論を開始する</button>
+<% } %>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const roomId = '<%= roomId %>';
+
+    const startBtn = document.getElementById('startBtn');
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            socket.emit('startDiscussion', roomId);
+        });
+    };
+
+    socket.emit('joinWaiting', roomId);
+
+    // 参加人数の更新を検知して、全員が揃うとボタンを押せるようにする
+    socket.on('updateWaitingCount', (count, total) => {
+        document.getElementById('count').textContent = count + '/' + total;
+        if (count >= total && total > 0) {
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) startBtn.disabled = false;
+        }
+    });
+
+    // 議論フェーズへ遷移する
+    socket.on('redirectToDiscussion', (url) => {
+        window.location.href = url;
+    });
+</script>
