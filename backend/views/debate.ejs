@@ -1,7 +1,7 @@
 <% layout('layout/boilerplates') %>
-<% style %>
+<% block('style', function(){ %>
   <link href="/css/debate.css" rel="stylesheet">
-<% endstyle %>]
+<% }) %>
 
 <!-- ヘッダー -->
 <header class="bg-dark text-white py-4 mb-4 shadow">
@@ -166,6 +166,6 @@
 
 </div>
 
-<% script %>
+<% block('script', function(){ %>
   <script src="/js/main.js"></script>
-<% endscript %>
+<% }) %>
