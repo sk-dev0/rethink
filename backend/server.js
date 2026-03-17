@@ -74,6 +74,10 @@ app.get('/debate', (req, res) => {
     res.render('debate');
 });
 
+// AI Debate API
+const debateRoutes = require('./routes/debate');
+app.use('/api/debate', debateRoutes);
+
 app.use((req, res) => {
     res.send('404ページ');
 });
