@@ -143,7 +143,9 @@ const callGeminiWithRetry = async (contents, maxRetries = 3, enableSearch = fals
                 contents,
             };
             if (enableSearch) {
-                options.tools = [{ googleSearch: {} }];
+                options.config = {
+                    tools : [{ googleSearch: {} }],
+                };
             }
             const response = await ai.models.generateContent(options);
             return response.text;
