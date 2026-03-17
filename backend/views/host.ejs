@@ -16,8 +16,9 @@
         document.getElementById('count').textContent = count;
     });
 
+    // dialogページに遷移する際にソケットIDとルームIDを渡す
     socket.on('redirect', (url) => {
-        window.location.href = url + '?socketId=' + socket.id;
+        window.location.href = url + '?socketId=' + socket.id + '&roomId=' + '<%= roomId %>';
     });
 
     document.getElementById('startBtn').addEventListener('click', () => {
