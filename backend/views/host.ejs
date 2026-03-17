@@ -1,9 +1,37 @@
 <% layout('layout/boilerplates') %>
 
-<h1>ホスト画面</h1>
-<p>ルームID: <%= roomId %></p>
-<p>参加人数: <span id="count">0</span>人</p>
-<button class="btn btn-primary" id="startBtn">スタート</button>
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="text-center mb-4">
+        <h1 class="fw-bold">ホスト画面</h1>
+        <p class="text-muted">参加者が揃ったら対話フェーズを開始してください</p>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h5 class="card-title"><i class="bi bi-info-circle me-2 text-primary"></i>このアプリについて</h5>
+            <p class="card-text text-muted small">
+                参加者はAIと1対1で対話を行い、テーマに対する自分の考えを整理します。
+                全員の対話が完了したら、AIが各参加者の意見をもとに議論を行います。
+            </p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4 border-primary">
+        <div class="card-body p-4">
+            <h5 class="card-title text-primary"><i class="bi bi-people me-2"></i>参加状況</h5>
+            <p class="card-text text-muted small">現在ロビーに参加している人数です</p>
+            <h2 class="text-center fw-bold"><span id="count">0</span><span class="fs-5 text-muted"> 人が参加中</span></h2>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h5 class="card-title"><i class="bi bi-play-circle me-2 text-success"></i>対話フェーズを開始</h5>
+            <p class="card-text text-muted small">ボタンを押すと全員が同時に対話フェーズに移行します</p>
+            <button class="btn btn-success w-100 mt-2" id="startBtn"><i class="bi bi-play-fill me-1"></i>対話フェーズを開始する</button>
+        </div>
+    </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
