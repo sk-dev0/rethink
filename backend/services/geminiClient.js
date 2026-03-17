@@ -22,7 +22,8 @@ const deleteSession  =(socketId) => {
     delete chatSessions[socketId];
 };
 
-const startChat = async () => {
+//chat.createは非同期関数ではないのでasync不要だと判断。どうだ？
+const startChat =  () => {
     const chat = ai.chats.create({
         model: 'gemini-2.5-flash',
         config: {
@@ -33,6 +34,10 @@ const startChat = async () => {
 };
 
 const sendMessage = async (socketId, message) => {
+    if (!chat) {
+        throw new Error(`ソケットIDが見つかりませんでした。socketId: ${socketId}`);
+    }
+    //getSessionがsocketIdを見つけられなかった際のエラーハンドリングを追加
     const chat = getSession(socketId);
     const result = await chat.sendMessage({ message });
     return result.text;
