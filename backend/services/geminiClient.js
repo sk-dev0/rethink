@@ -131,4 +131,28 @@ const generateProfile = async (socketId, history) => {
     return JSON.parse(text);
 }
 
-module.exports = { createSession, getSession, deleteSession, startChat, sendMessage, generateProfile };
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Gemini APIを呼び出す（3回までリトライ）
+// aiインスタンスはファイル上部で生成済みのものを使う
+const callGeminiWithRetry = async (contents, maxRetries = 3, enableSearch = false) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const options = {
+                model: 'gemini-2.5-flash',
+                contents,
+            };
+            if (enableSearch) {
+                options.tools = [{ googleSearch: {} }];
+            }
+            const response = await ai.models.generateContent(options);
+            return response.text;
+        } catch (error) {
+            console.error(`API呼び出し失敗 (試行 ${attempt}/${maxRetries}):`, error.message);
+            if (attempt < maxRetries) await delay(2000);
+        }
+    }
+    return null;
+};
+
+module.exports = { createSession, getSession, deleteSession, startChat, sendMessage, generateProfile, delay, callGeminiWithRetry, };
