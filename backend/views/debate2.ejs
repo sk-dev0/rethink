@@ -1,0 +1,559 @@
+<% layout('layout/boilerplates') %>
+<% block('style').append('<link href="/css/debate.css" rel="stylesheet">') %>
+<% block('style').append(`
+<style>
+  /* Detail UI border tokens: keep all outline colors and widths consistent */
+  :root {
+    --detail-border-color: #111;
+    --detail-border-width: 3px;
+  }
+
+  /* Detail UI: overview and per-phase navigation live only in debate2.ejs */
+  .debate-detail-root {
+    margin-top: 2rem;
+    /* Detail UI font: inherit the same font used by the input card area */
+    font-family: inherit;
+  }
+
+  .debate-overview-title {
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 300;
+    text-align: center;
+    margin-bottom: 3rem;
+    letter-spacing: 0.04em;
+  }
+
+  .debate-overview-track {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+  }
+
+  .debate-track-link {
+    width: 56px;
+    height: 24px;
+    background: #1f6988;
+    border: var(--detail-border-width) solid var(--detail-border-color);
+    flex: 0 0 auto;
+  }
+
+  .debate-track-arrow {
+    width: 0;
+    height: 0;
+    border-top: 58px solid transparent;
+    border-bottom: 58px solid transparent;
+    border-left: 72px solid #1f6988;
+    filter: drop-shadow(0 0 0 #0f3242);
+    flex: 0 0 auto;
+  }
+
+  .debate-phase-box {
+    width: 205px;
+    min-height: 330px;
+    padding: 1.5rem 1rem;
+    border: var(--detail-border-width) solid var(--detail-border-color);
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .debate-phase-box:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+    border-color: #1f6988;
+  }
+
+  .debate-phase-box.is-active {
+    border-color: #1f6988;
+    box-shadow: 0 18px 40px rgba(31, 105, 136, 0.18);
+  }
+
+  .debate-phase-box-title {
+    font-size: clamp(1.8rem, 2.6vw, 2.6rem);
+    font-weight: 300;
+  }
+
+  .debate-phase-box-lines {
+    font-size: clamp(1.2rem, 1.7vw, 1.9rem);
+    line-height: 1.45;
+    white-space: pre-line;
+  }
+
+  .debate-detail-card {
+    /* Detail result card: align the border feel with the input card */
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+
+  /* Detail view: hide the topic card and keep only the phase card visible */
+  #debatePhaseView .debate-detail-card:first-child {
+    display: none;
+  }
+
+  .debate-detail-card .card-header {
+    /* Detail result card header: use the same card border tone as the input card */
+    background: rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    font-weight: 700;
+  }
+
+  .debate-detail-card .card-body,
+  .debate-detail-actions .btn {
+    /* Detail UI font: keep cards and buttons on the inherited page font */
+    font-family: inherit;
+  }
+
+  .debate-phase-panel {
+    min-height: 300px;
+  }
+
+  .debate-detail-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 991px) {
+    .debate-overview-track {
+      flex-direction: column;
+    }
+
+    .debate-track-link,
+    .debate-track-arrow {
+      display: none;
+    }
+
+    .debate-phase-box {
+      width: min(100%, 320px);
+      min-height: 240px;
+    }
+  }
+</style>
+`) %>
+
+<!-- ヘッダー -->
+<header class="bg-dark text-white py-4 mb-4 shadow">
+  <div class="container">
+    <h1 class="mb-0 fw-bold">
+      <span class="text-info">Rethink</span> - AI Debate
+    </h1>
+    <p class="mb-0 text-secondary small">複数のアイデアをAIが4フェーズで議論し、深く考察します</p>
+  </div>
+</header>
+
+<div class="pb-5">
+
+  <!-- 入力フォームカード -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+
+      <!-- 議題入力 -->
+      <div class="mb-4">
+        <label for="topic" class="form-label fw-semibold">議題・前提条件</label>
+        <textarea
+          id="topic"
+          class="form-control"
+          rows="3"
+          placeholder="例: 新しいプロダクトのUI設計において、どちらのアプローチが優れているか"
+        >大学の授業にはAIを標準的な学習ツールとして導入すべきである。</textarea><!-- DEMO_PRESET: remove this seeded topic text when the demo ends -->
+      </div>
+
+      <!-- エージェントカード群 -->
+      <div id="agentsContainer" class="row mb-3">
+        <!-- アイデアA（初期・削除不可） -->
+        <div class="col-md-6 mb-4 agent-col" data-index="0">
+          <div class="border rounded p-3 agent-card" data-agent-index="0">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold text-primary mb-0">アイデアA</h6>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">主張（core_claim）</label>
+              <textarea class="form-control border-primary agent-claim" rows="2" placeholder="例: シンプルで直感的なデザインを優先する">大学は通常の授業にAIツールを導入すべきであり、それによって学習効率が上がり、社会で必要となる実践的な活用力も身につく。</textarea><!-- DEMO_PRESET: Agent A claim -->
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">根拠（rationale）</label>
+              <textarea class="form-control border-primary agent-rationale" rows="2" placeholder="例: ユーザー調査でシンプルなUIの満足度が高く、離脱率が低い実績がある">すでに学生は授業外でAIを使っている。正式に授業へ組み込めば、教員が検証方法や引用ルール、責任ある使い方まで指導できる。</textarea><!-- DEMO_PRESET: Agent A rationale -->
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">前提条件（preconditions）</label>
+              <textarea class="form-control border-primary agent-preconditions" rows="2" placeholder="例: ターゲットユーザーは技術に詳しくない一般層である">教員がAI利用ルールを明確に示し、出典確認を必須にし、単なる出力ではなく思考過程を評価する課題設計を行うことが前提である。</textarea><!-- DEMO_PRESET: Agent A preconditions -->
+            </div>
+            <div class="mb-0">
+              <label class="form-label small fw-semibold">立場を支える具体的な事実・経験（任意）</label>
+              <textarea class="form-control border-primary agent-experience" rows="2" placeholder="例: 実際に使ったユーザーからシンプルなUIの方が迷わないという声を聞いた">初年次ゼミでAI支援の文章作成を試験導入した経験があり、学生の推敲の質が上がる場面を観察した。</textarea><!-- DEMO_PRESET: Agent A experience -->
+            </div>
+          </div>
+        </div>
+
+        <!-- アイデアB（初期・削除不可） -->
+        <div class="col-md-6 mb-4 agent-col" data-index="1">
+          <div class="border rounded p-3 agent-card" data-agent-index="1">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold text-danger mb-0">アイデアB</h6>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">主張（core_claim）</label>
+              <textarea class="form-control border-danger agent-claim" rows="2" placeholder="例: 機能を豊富に揃えたパワーユーザー向けデザインを優先する">大学の授業でのAI利用は制限すべきであり、依存が進むと基礎的な思考力が弱まり、本来の学力評価も難しくなる。</textarea><!-- DEMO_PRESET: Agent B claim -->
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">根拠（rationale）</label>
+              <textarea class="form-control border-danger agent-rationale" rows="2" placeholder="例: 上位20%のヘビーユーザーが売上の80%を占め、彼らは機能の多さを評価している">AIが課題の大部分を作ってしまうと、特に学習初期の学生は内容を十分理解しないまま整った答案だけを提出できてしまう。</textarea><!-- DEMO_PRESET: Agent B rationale -->
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">前提条件（preconditions）</label>
+              <textarea class="form-control border-danger agent-preconditions" rows="2" placeholder="例: ユーザーの多様なニーズに応えるためには機能の幅が必要である">少なくとも基礎科目では、まず自力で読む・書く・考える力を確立してからAIを広く導入すべきである。</textarea><!-- DEMO_PRESET: Agent B preconditions -->
+            </div>
+            <div class="mb-0">
+              <label class="form-label small fw-semibold">立場を支える具体的な事実・経験（任意）</label>
+              <textarea class="form-control border-danger agent-experience" rows="2" placeholder="例: ヘビーユーザーが機能の多さを理由に継続利用しているという事例を観察した">AI生成の要約に頼る学生が、持ち込み不可試験や口頭試問で十分に説明できず苦戦する様子を見てきた。</textarea><!-- DEMO_PRESET: Agent B experience -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- アイデア追加ボタン -->
+      <div class="mb-4">
+        <button id="addAgentBtn" type="button" class="btn btn-outline-secondary">
+          + アイデアを追加
+        </button>
+        <span class="text-muted small ms-2">（3つ以上のアイデアで多角的な議論が可能です）</span>
+      </div>
+
+      <!-- フェーズ3ターン数設定 -->
+      <div class="mb-4">
+        <label for="maxTurns" class="form-label fw-semibold">フェーズ3の議論ターン数（サブ議題あたり）</label>
+        <div class="d-flex align-items-center gap-3">
+          <input
+            type="number"
+            id="maxTurns"
+            class="form-control"
+            style="width: 100px;"
+            value="2"
+            min="1"
+            max="2"
+          >
+          <span class="text-muted small">ターン（1〜2、デフォルト2で攻撃モードα→βを1サイクル）</span>
+        </div>
+      </div>
+
+      <!-- 議論開始ボタン -->
+      <div class="d-grid d-md-flex">
+        <button id="startBtn" class="btn btn-dark btn-lg px-5">
+          議論開始
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 結果表示エリア（初期非表示） -->
+  <div id="resultArea" class="d-none">
+
+    <!-- フェーズ1: 意見表明 -->
+    <div class="mb-4">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ1: 意見表明</h2>
+      <div class="accordion" id="phase1Accordion">
+        <div id="phase1Content"></div>
+      </div>
+    </div>
+
+    <!-- フェーズ2: 情報取得・反論・サブ議題抽出 -->
+    <div class="mb-4">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ2: 情報取得・反論・サブ議題抽出</h2>
+      <div class="accordion" id="phase2Accordion">
+        <div id="phase2Content"></div>
+      </div>
+    </div>
+
+    <!-- フェーズ3: サブ議題別議論 -->
+    <div class="mb-4">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ3: サブ議題別議論</h2>
+      <div class="accordion" id="phase3Accordion">
+        <div id="phase3Content"></div>
+      </div>
+    </div>
+
+    <!-- フェーズ4: 統合表明とまとめ -->
+    <div class="mb-4">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ4: 統合表明とまとめ</h2>
+      <div id="phase4Content"></div>
+
+      <!-- 最終まとめ -->
+      <div class="card border-success shadow-sm mt-4">
+        <div class="card-header bg-success text-white fw-semibold">
+          最終総括レポート
+        </div>
+        <div class="card-body">
+          <p id="summaryContent" class="mb-0" style="white-space: pre-wrap;"></p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<% block('script').append('<script src="/js/main.js"></script>') %>
+<% block('script').append(`
+<script>
+  // 表示順の調整: 議論開始後に最初に見えるセクションを Phase 4 にする
+  document.addEventListener('DOMContentLoaded', () => {
+    const resultArea = document.getElementById('resultArea');
+    const phase4Section = document.getElementById('phase4Content')?.closest('.mb-4');
+
+    if (!resultArea || !phase4Section) return;
+
+    resultArea.prepend(phase4Section);
+  });
+</script>
+`) %>
+
+<% block('script').append(`
+<script>
+  // debate2 detail navigation:
+  // - "詳細を確認" opens a clickable overview
+  // - clicking a phase opens the phase-only screen
+  // - next/prev/index buttons navigate between phases and back to the overview
+  document.addEventListener('DOMContentLoaded', () => {
+    const resultArea = document.getElementById('resultArea');
+    const topicInput = document.getElementById('topic');
+    const phase1Section = document.getElementById('phase1Content')?.closest('.mb-4');
+    const phase2Section = document.getElementById('phase2Content')?.closest('.mb-4');
+    const phase3Section = document.getElementById('phase3Content')?.closest('.mb-4');
+    const phase4Section = document.getElementById('phase4Content')?.closest('.mb-4');
+
+    if (!resultArea || !phase4Section) return;
+    if (document.getElementById('debateDetailRoot')) return;
+
+    const phases = [
+      { title: 'フェーズ1', lines: '意見表明', source: phase1Section },
+      { title: 'フェーズ2', lines: '情報取得\\n反論\\nサブ議題', source: phase2Section },
+      { title: 'フェーズ3', lines: 'サブ議題別\\n議論', source: phase3Section },
+      { title: 'フェーズ4', lines: '統合表明と\\nまとめ', source: phase4Section },
+    ];
+
+    const detailRoot = document.createElement('div');
+    detailRoot.id = 'debateDetailRoot';
+    detailRoot.className = 'debate-detail-root d-none';
+    detailRoot.innerHTML = \`
+      <div id="debateOverviewView">
+        <h2 class="debate-overview-title">AIたちはこのように議論しています</h2>
+        <div id="debateOverviewTrack" class="debate-overview-track"></div>
+      </div>
+      <div id="debatePhaseView" class="d-none">
+        <div class="card debate-detail-card mb-4">
+          <div class="card-header">議題</div>
+          <div class="card-body">
+            <p id="debateTopicText" class="mb-0" style="white-space: pre-wrap;"></p>
+          </div>
+        </div>
+        <div class="card debate-detail-card">
+          <div id="debatePhaseCardTitle" class="card-header"></div>
+          <div id="debatePhaseCardBody" class="card-body debate-phase-panel"></div>
+        </div>
+        <div class="debate-detail-actions">
+          <button id="phasePrevBtn" type="button" class="btn btn-outline-dark">前へ</button>
+          <button id="phaseIndexBtn" type="button" class="btn btn-dark">目次へ</button>
+          <button id="phaseNextBtn" type="button" class="btn btn-outline-dark">次へ</button>
+        </div>
+      </div>
+    \`;
+    resultArea.appendChild(detailRoot);
+
+    const overviewView = detailRoot.querySelector('#debateOverviewView');
+    const phaseView = detailRoot.querySelector('#debatePhaseView');
+    const overviewTrack = detailRoot.querySelector('#debateOverviewTrack');
+    const topicText = detailRoot.querySelector('#debateTopicText');
+    const phaseCardTitle = detailRoot.querySelector('#debatePhaseCardTitle');
+    const phaseCardBody = detailRoot.querySelector('#debatePhaseCardBody');
+    const prevBtn = detailRoot.querySelector('#phasePrevBtn');
+    const nextBtn = detailRoot.querySelector('#phaseNextBtn');
+    const indexBtn = detailRoot.querySelector('#phaseIndexBtn');
+
+    let currentPhaseIndex = 0;
+
+    const hideSourceSections = () => {
+      phases.forEach((phase) => {
+        if (phase.source) phase.source.classList.add('d-none');
+      });
+    };
+
+    const showPhase4SummaryOnly = () => {
+      detailRoot.classList.add('d-none');
+      phase4Section.classList.remove('d-none');
+      [phase1Section, phase2Section, phase3Section].forEach((section) => {
+        if (section) section.classList.add('d-none');
+      });
+    };
+
+    const ensureDetailsButton = () => {
+      let showDetailsBtn = document.getElementById('showDetailsBtn');
+
+      if (showDetailsBtn) {
+        const replacement = showDetailsBtn.cloneNode(true);
+        replacement.textContent = '詳細を確認';
+        showDetailsBtn.replaceWith(replacement);
+        showDetailsBtn = replacement;
+      } else {
+        const buttonWrap = document.createElement('div');
+        buttonWrap.className = 'mt-4';
+        showDetailsBtn = document.createElement('button');
+        showDetailsBtn.id = 'showDetailsBtn';
+        showDetailsBtn.type = 'button';
+        showDetailsBtn.className = 'btn btn-outline-dark';
+        showDetailsBtn.textContent = '詳細を確認';
+        buttonWrap.appendChild(showDetailsBtn);
+        phase4Section.appendChild(buttonWrap);
+      }
+
+      showDetailsBtn.addEventListener('click', () => {
+        renderOverview();
+      });
+    };
+
+    const buildOverview = () => {
+      overviewTrack.innerHTML = '';
+
+      phases.forEach((phase, index) => {
+        if (index > 0 && index < phases.length - 1) {
+          const connector = document.createElement('div');
+          connector.className = 'debate-track-link';
+          overviewTrack.appendChild(connector);
+        }
+
+        if (index === phases.length - 1) {
+          const arrow = document.createElement('div');
+          arrow.className = 'debate-track-arrow';
+          overviewTrack.appendChild(arrow);
+        }
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'debate-phase-box';
+        button.dataset.phaseIndex = String(index);
+        button.innerHTML = \`
+          <div class="debate-phase-box-title">\${phase.title}</div>
+          <div class="debate-phase-box-lines">\${phase.lines}</div>
+        \`;
+
+        button.addEventListener('click', () => {
+          openPhase(index);
+        });
+
+        overviewTrack.appendChild(button);
+      });
+    };
+
+    const clonePhaseBody = (phaseIndex) => {
+      const source = phases[phaseIndex]?.source;
+      if (!source) return '<p class="mb-0">表示できる内容がありません。</p>';
+
+      const clone = source.cloneNode(true);
+      clone.classList.remove('d-none');
+      clone.querySelectorAll('#showDetailsBtn').forEach((node) => node.remove());
+      return clone.innerHTML;
+    };
+
+    const setActiveOverviewPhase = (phaseIndex) => {
+      overviewTrack.querySelectorAll('.debate-phase-box').forEach((box, index) => {
+        box.classList.toggle('is-active', index === phaseIndex);
+      });
+    };
+
+    const renderOverview = () => {
+      hideSourceSections();
+      phase4Section.classList.add('d-none');
+      detailRoot.classList.remove('d-none');
+      overviewView.classList.remove('d-none');
+      phaseView.classList.add('d-none');
+      setActiveOverviewPhase(-1);
+    };
+
+    const openPhase = (phaseIndex) => {
+      currentPhaseIndex = phaseIndex;
+      hideSourceSections();
+      phase4Section.classList.add('d-none');
+      detailRoot.classList.remove('d-none');
+      overviewView.classList.add('d-none');
+      phaseView.classList.remove('d-none');
+
+      topicText.textContent = topicInput?.value?.trim() || '議題が未入力です。';
+      phaseCardTitle.textContent = phases[phaseIndex].title;
+      phaseCardBody.innerHTML = clonePhaseBody(phaseIndex);
+      prevBtn.classList.toggle('d-none', phaseIndex === 0);
+      nextBtn.classList.toggle('d-none', phaseIndex === phases.length - 1);
+      setActiveOverviewPhase(phaseIndex);
+    };
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPhaseIndex > 0) openPhase(currentPhaseIndex - 1);
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentPhaseIndex < phases.length - 1) openPhase(currentPhaseIndex + 1);
+    });
+
+    indexBtn.addEventListener('click', () => {
+      renderOverview();
+    });
+
+    buildOverview();
+    hideSourceSections();
+    showPhase4SummaryOnly();
+    ensureDetailsButton();
+  });
+</script>
+`) %>
+
+<% block('script').append(`
+<script>
+  // 詳細フェーズの制御:
+  // 1. Phase 1-3 を初期状態で隠す
+  // 2. Phase 4 の下に「詳細を確認」ボタンを追加する
+  // 3. ボタン押下で Phase 1-3 を表示する
+  document.addEventListener('DOMContentLoaded', () => {
+    const phase4Section = document.getElementById('phase4Content')?.closest('.mb-4');
+    const phase1Section = document.getElementById('phase1Content')?.closest('.mb-4');
+    const phase2Section = document.getElementById('phase2Content')?.closest('.mb-4');
+    const phase3Section = document.getElementById('phase3Content')?.closest('.mb-4');
+
+    if (!phase4Section) return;
+
+    [phase1Section, phase2Section, phase3Section].forEach((section) => {
+      if (section) section.classList.add('d-none');
+    });
+
+    if (document.getElementById('showDetailsBtn')) return;
+
+    const buttonWrap = document.createElement('div');
+    buttonWrap.className = 'mt-4';
+
+    const showDetailsBtn = document.createElement('button');
+    showDetailsBtn.id = 'showDetailsBtn';
+    showDetailsBtn.type = 'button';
+    showDetailsBtn.className = 'btn btn-outline-dark';
+    showDetailsBtn.textContent = '詳細を確認';
+
+    showDetailsBtn.addEventListener('click', () => {
+      [phase1Section, phase2Section, phase3Section].forEach((section) => {
+        if (section) section.classList.remove('d-none');
+      });
+      buttonWrap.classList.add('d-none');
+    });
+
+    buttonWrap.appendChild(showDetailsBtn);
+    phase4Section.appendChild(buttonWrap);
+  });
+</script>
+`) %>
