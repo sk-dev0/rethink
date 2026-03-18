@@ -9,7 +9,8 @@ const {
     buildPhase2Step1Prompt,
     buildPhase2Step3Prompt,
     buildPhase3Prompt,
-    buildPhase4Step1Prompt,
+    buildPhase4Turn1Prompt,
+    buildPhase4Turn2Prompt,
 } = require('./promptBuilders');
 const {
     runCredibilityCheck,
@@ -99,7 +100,8 @@ const runDebate = async (topic, agents, maxTurns) => {
                 ...attacker,
                 researchText: attackerResearch ? attackerResearch.text : '',
             };
-            const prompt = buildPhase2Step3Prompt(attackerInfo, defender, credibilityText);
+            const defenderOpening = phase1Results.find(r => r.label === defender.label)?.text || '';
+            const prompt = buildPhase2Step3Prompt(attackerInfo, defender, credibilityText, defenderOpening);
             const contents = [{ role: 'user', parts: [{ text: prompt }] }];
             const text = await callGeminiWithRetry(contents);
             return { attacker: attacker.label, defender: defender.label, text: text || '（反論生成失敗）' };
@@ -192,7 +194,7 @@ const runDebate = async (topic, agents, maxTurns) => {
     console.log('[Phase4-Step1-Turn1] 統合表明ターン1');
     const phase4Turn1 = (await Promise.allSettled(
         agents.map(async (agent) => {
-            const prompt = buildPhase4Step1Prompt(agent, subTopicSummariesText, []);
+            const prompt = buildPhase4Turn1Prompt(agent, subTopicSummariesText);
             const contents = [{ role: 'user', parts: [{ text: prompt }] }];
             const text = await callGeminiWithRetry(contents);
             return { label: agent.label, text: text || '（生成失敗）' };
@@ -210,7 +212,7 @@ const runDebate = async (topic, agents, maxTurns) => {
             const otherTurn1Texts = phase4Turn1
                 .filter(u => u.label !== agent.label)
                 .map(u => `${u.label}の統合表明: ${u.text}`);
-            const prompt = buildPhase4Step1Prompt(agent, subTopicSummariesText, otherTurn1Texts);
+            const prompt = buildPhase4Turn2Prompt(agent, subTopicSummariesText, otherTurn1Texts);
             const contents = [{ role: 'user', parts: [{ text: prompt }] }];
             const text = await callGeminiWithRetry(contents);
             return { label: agent.label, text: text || '（生成失敗）' };
@@ -300,7 +302,7 @@ const processSubTopic = async (subTopic, agents, maxTurns) => {
         discussedTopics = addTopicsToList(discussedTopics, newTopics);
 
         // ターン2以降、かつdepthが2未満の場合にセマンティック分岐を判定
-        if (turn >= 1 && prevUtterances && subTopic.depth < 2) {
+        if (turn >= 1 && prevUtterances && subTopic.depth < 1) {
             const prevTexts = prevUtterances.map(u => `${u.label}: ${u.text}`);
             const currentTexts = currentUtterances.map(u => `${u.label}: ${u.text}`);
             const branchScore = await checkSemanticBranch(prevTexts, currentTexts);

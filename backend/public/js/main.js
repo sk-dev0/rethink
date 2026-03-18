@@ -20,6 +20,14 @@ const esc = (str) => {
         .replace(/'/g, '&#39;');
 };
 
+const cleanSummary = (text) => {
+    if (!text) return text;
+    return text
+        .replace(/\*/g, '')
+        .replace(/^-\s+/gm, '')
+        .replace(/([\u3000-\u9FFF\uFF00-\uFFEF])\/([\u3000-\u9FFF\uFF00-\uFFEF])/g, '$1$2');
+};
+
 /** アコーディオンアイテムHTMLを生成 */
 const createAccordionItem = (parentId, itemId, title, bodyHtml, expanded = false) => {
     const showClass = expanded ? 'show' : '';
@@ -55,6 +63,35 @@ const preText = (text) => `<p style="white-space:pre-wrap;">${esc(text)}</p>`;
 
 const AGENT_COLORS = ['primary', 'danger', 'success', 'warning', 'info', 'secondary'];
 const AGENT_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+const reindexAgents = () => {
+    const container = document.getElementById('agentsContainer');
+    const cols = container.querySelectorAll('.agent-col');
+    cols.forEach((c, idx) => {
+        c.dataset.index = idx;
+        const card = c.querySelector('.agent-card');
+        if (!card) return;
+        card.dataset.agentIndex = idx;
+
+        const label = AGENT_LABELS[idx] || `Agent${idx}`;
+        const newColor = AGENT_COLORS[idx % AGENT_COLORS.length];
+        const oldColor = AGENT_COLORS.find(col =>
+            card.querySelector('h6')?.classList.contains(`text-${col}`)
+        );
+
+        const heading = card.querySelector('h6');
+        if (heading) {
+            heading.textContent = `アイデア${label}`;
+            heading.className = `fw-bold text-${newColor} mb-0`;
+        }
+
+        if (oldColor && oldColor !== newColor) {
+            card.querySelectorAll('textarea').forEach(ta => {
+                ta.classList.replace(`border-${oldColor}`, `border-${newColor}`);
+            });
+        }
+    });
+};
 
 const addAgentCard = () => {
     const container = document.getElementById('agentsContainer');
@@ -97,6 +134,7 @@ const addAgentCard = () => {
 
     col.querySelector('.remove-agent-btn').addEventListener('click', () => {
         col.remove();
+        reindexAgents();
     });
 };
 
@@ -284,7 +322,7 @@ const renderPhase4 = (phase4) => {
 </div>`);
 
     // 最終総括
-    document.getElementById('summaryContent').textContent = phase4.finalSummary || '';
+    document.getElementById('summaryContent').textContent = cleanSummary(phase4.finalSummary || '');
 };
 
 /* =============================
