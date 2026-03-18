@@ -46,7 +46,7 @@
 
     // dialogページに遷移する際にソケットIDとルームIDを渡す
     socket.on('redirect', (url) => {
-        window.location.href = url + '?socketId=' + socket.id + '&roomId=' + '<%= roomId %>';
+        window.location.href = url + '?socketId=' + socket.id + '&roomId=' + '<%= roomId %>' + '&isHost=true';
     });
 
     document.getElementById('startBtn').addEventListener('click', () => {

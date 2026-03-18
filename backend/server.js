@@ -35,10 +35,7 @@ app.get('/', (req, res) => {
 
 app.get('/room/:roomId/host', (req, res) => {
     const roomId = req.params.roomId;
-    req.session.isHost = true;
-    req.session.save(() => {
-        res.render('host', { roomId });
-    });
+    res.render('host', { roomId });
 });
 
 app.get('/room/:roomId', (req, res) => {
@@ -49,9 +46,9 @@ app.get('/room/:roomId', (req, res) => {
 app.get('/dialog', async (req, res) => {
     const socketId = req.query.socketId;
     const roomId = req.query.roomId;
-    
+    const isHost = req.query.isHost === 'true';
     await createSession(socketId);
-    res.render('dialog', { socketId, roomId });
+    res.render('dialog', { socketId, roomId, isHost });
 });
 
 app.post('/dialog/message', async (req, res) => {
@@ -72,10 +69,14 @@ app.post('/dialog/profile', async (req, res) => {
     console.log('プロファイル生成完了:', profile);
 });
 
+app.get('/waiting/:roomId/host', (req, res) => {
+    const roomId = req.params.roomId;
+    res.render('waiting', { roomId, isHost: true });
+});
+
 app.get('/waiting/:roomId', (req, res) => {
     const roomId = req.params.roomId;
-    const isHost = req.session.isHost || false;
-    res.render('waiting',{ roomId, isHost });
+    res.render('waiting', { roomId, isHost: false });
 });
 
 app.get('/discussion', (req, res) => {
