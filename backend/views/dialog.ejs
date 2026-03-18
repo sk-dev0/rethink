@@ -44,7 +44,7 @@
     // 接続が完了したらサーバにgeminiセッションの初期化を依頼
     // initDialogイベントはserver.jsに記載あり
     socket.on('connect', () => {
-        socket.emit('initDialog');
+        socket.emit('initDialog', '<%= roomId %>');
     });
 
     // 対話開始イベントを受け取ったらgeminiから対話を始める

@@ -11,110 +11,67 @@
   </div>
 </header>
 
-<div class="pb-5">
+<!-- プロフィールから自動生成されたエージェント -->
+<div id="profilesContainer" class="row mb-3">
 
-  <!-- 入力フォームカード -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
+    <!-- main.jsが必要とするダミー要素 -->
+    <input type="hidden" id="maxTurns" value="2">
+    <button id="addAgentBtn" style="display:none;"></button>
 
-      <!-- 議題入力 -->
-      <div class="mb-4">
-        <label for="topic" class="form-label fw-semibold">議題・前提条件</label>
-        <textarea
-          id="topic"
-          class="form-control"
-          rows="3"
-          placeholder="例: 新しいプロダクトのUI設計において、どちらのアプローチが優れているか"
-        ></textarea>
-      </div>
-
-      <!-- エージェントカード群 -->
-      <div id="agentsContainer" class="row mb-3">
-        <!-- アイデアA（初期・削除不可） -->
-        <div class="col-md-6 mb-4 agent-col" data-index="0">
-          <div class="border rounded p-3 agent-card" data-agent-index="0">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="fw-bold text-primary mb-0">アイデアA</h6>
+    <div class="text-center mb-5">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="bi bi-chat-square-text me-2"></i>議題
             </div>
-            <div class="mb-2">
-              <label class="form-label small fw-semibold">主張（core_claim）</label>
-              <textarea class="form-control border-primary agent-claim" rows="2" placeholder="例: シンプルで直感的なデザインを優先する"></textarea>
+            <div class="card-body py-3">
+                <h5 class="fw-bold mb-0"><%= typeof topic !== 'undefined' ? topic : '' %></h5>
             </div>
-            <div class="mb-2">
-              <label class="form-label small fw-semibold">根拠（rationale）</label>
-              <textarea class="form-control border-primary agent-rationale" rows="2" placeholder="例: ユーザー調査でシンプルなUIの満足度が高く、離脱率が低い実績がある"></textarea>
-            </div>
-            <div class="mb-2">
-              <label class="form-label small fw-semibold">前提条件（preconditions）</label>
-              <textarea class="form-control border-primary agent-preconditions" rows="2" placeholder="例: ターゲットユーザーは技術に詳しくない一般層である"></textarea>
-            </div>
-            <div class="mb-0">
-              <label class="form-label small fw-semibold">立場を支える具体的な事実・経験（任意）</label>
-              <textarea class="form-control border-primary agent-experience" rows="2" placeholder="例: 実際に使ったユーザーからシンプルなUIの方が迷わないという声を聞いた"></textarea>
-            </div>
-          </div>
         </div>
-
-        <!-- アイデアB（初期・削除不可） -->
-        <div class="col-md-6 mb-4 agent-col" data-index="1">
-          <div class="border rounded p-3 agent-card" data-agent-index="1">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="fw-bold text-danger mb-0">アイデアB</h6>
-            </div>
-            <div class="mb-2">
-              <label class="form-label small fw-semibold">主張（core_claim）</label>
-              <textarea class="form-control border-danger agent-claim" rows="2" placeholder="例: 機能を豊富に揃えたパワーユーザー向けデザインを優先する"></textarea>
-            </div>
-            <div class="mb-2">
-              <label class="form-label small fw-semibold">根拠（rationale）</label>
-              <textarea class="form-control border-danger agent-rationale" rows="2" placeholder="例: 上位20%のヘビーユーザーが売上の80%を占め、彼らは機能の多さを評価している"></textarea>
-            </div>
-            <div class="mb-2">
-              <label class="form-label small fw-semibold">前提条件（preconditions）</label>
-              <textarea class="form-control border-danger agent-preconditions" rows="2" placeholder="例: ユーザーの多様なニーズに応えるためには機能の幅が必要である"></textarea>
-            </div>
-            <div class="mb-0">
-              <label class="form-label small fw-semibold">立場を支える具体的な事実・経験（任意）</label>
-              <textarea class="form-control border-danger agent-experience" rows="2" placeholder="例: ヘビーユーザーが機能の多さを理由に継続利用しているという事例を観察した"></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- アイデア追加ボタン -->
-      <div class="mb-4">
-        <button id="addAgentBtn" type="button" class="btn btn-outline-secondary">
-          + アイデアを追加
-        </button>
-        <span class="text-muted small ms-2">（3つ以上のアイデアで多角的な議論が可能です）</span>
-      </div>
-
-      <!-- フェーズ3ターン数設定 -->
-      <div class="mb-4">
-        <label for="maxTurns" class="form-label fw-semibold">フェーズ3の議論ターン数（サブ議題あたり）</label>
-        <div class="d-flex align-items-center gap-3">
-          <input
-            type="number"
-            id="maxTurns"
-            class="form-control"
-            style="width: 100px;"
-            value="2"
-            min="1"
-            max="2"
-          >
-          <span class="text-muted small">ターン（1〜2、デフォルト2で攻撃モードα→βを1サイクル）</span>
-        </div>
-      </div>
-
-      <!-- 議論開始ボタン -->
-      <div class="d-grid d-md-flex">
-        <button id="startBtn" class="btn btn-dark btn-lg px-5">
-          議論開始
-        </button>
-      </div>
-
+        <input type="hidden" id="topic" value="<%= typeof topic !== 'undefined' ? topic : '' %>">
     </div>
-  </div>
+
+    <% const colors = ['primary', 'danger', 'success', 'warning', 'info', 'secondary']; %>
+    <% profiles.forEach((profile, i) => { %>
+    <div class="col-md-6 mb-4 agent-col" data-index="<%= i %>">
+        <div class="border border-<%= colors[i] %> rounded p-3 agent-card" data-agent-index="<%= i %>">
+            <h6 class="fw-bold text-<%= colors[i] %> mb-3">アイデア<%= ['A','B','C','D','E','F'][i] %></h6>
+
+            <p class="small fw-semibold mb-1">主張（core_claim）</p>
+            <div class="border border-<%= colors[i] %> rounded p-2 mb-3" style="min-height: 80px; max-height: 80px; overflow-y: auto;">
+                <p class="small mb-0"><%= profile.core_claim %></p>
+            </div>
+
+            <p class="small fw-semibold mb-1">根拠（rationale）</p>
+            <div class="border border-<%= colors[i] %> rounded p-2 mb-3" style="min-height: 80px; max-height: 80px; overflow-y: auto;">
+              <p class="small mb-0"><%= profile.rationale %></p>
+            </div>
+
+            <p class="small fw-semibold mb-1">前提条件（preconditions）</p>
+            <div class="border border-<%= colors[i] %> rounded p-2 mb-3" style="min-height: 80px; max-height: 80px; overflow-y: auto;">
+              <p class="small mb-0"><%= profile.preconditions %></p>
+            </div>
+
+            <p class="small fw-semibold mb-1">立場を支える具体的な事実・経験（任意）</p>
+            <div class="border border-<%= colors[i] %> rounded p-2 mb-3" style="min-height: 80px; max-height: 80px; overflow-y: auto;">
+              <p class="small mb-0"><%= profile.experience %></p>
+            </div>
+
+            <input type="hidden" class="agent-claim" value="<%= profile.core_claim %>">
+            <input type="hidden" class="agent-rationale" value="<%= profile.rationale %>">
+            <input type="hidden" class="agent-preconditions" value="<%= profile.preconditions %>">
+            <input type="hidden" class="agent-experience" value="<%= profile.experience %>">
+        </div>
+    </div>
+    <% }) %>
+</div>
+
+<div class="my-4">
+    <button id="startBtn" class="btn btn-dark btn-lg w-100 rounded-pill">
+        <i class="bi bi-play-fill me-2"></i>議論を開始する
+    </button>
+</div>
+
+
 
   <!-- 結果表示エリア（初期非表示） -->
   <div id="resultArea" class="d-none">

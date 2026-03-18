@@ -17,6 +17,8 @@ const io = new Server(server);
 const roomTotals = {};
 // ルームごとのプロフィールを管理するオブジェクト
 const roomProfiles = {};
+// 議題・テーマ管理のためのオブジェクト
+const roomThemes = {};
 
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
@@ -90,11 +92,34 @@ app.get('/index', (req, res) => {
     res.render('index');
 });
 
+// テスト用ルート
+app.get('/debug/debate', (req, res) => {
+    const dummyProfiles = [
+        {
+            socketId: 'dummy-1',
+            core_claim: '授業へのスマホ持ち込みを認めるべきだ',
+            rationale: '調べ学習や辞書代わりとして活用でき、学習効率が上がる',
+            preconditions: '適切なルールを設けた上での使用を前提とする',
+            experience: '実際に調べ学習でスマホを使った授業の方が理解度が高かった'
+        },
+        {
+            socketId: 'dummy-2',
+            core_claim: '授業へのスマホ持ち込みは認めるべきでない',
+            rationale: 'SNSやゲームへの誘惑があり、集中力が低下する',
+            preconditions: '自己管理が難しい年齢層を対象とした場合に限る',
+            experience: 'スマホを持ち込んだクラスでは授業中の私語や脱線が増えた'
+        }
+    ];
+    const topic = '授業にスマホの使用を認めるべきか';
+    res.render('debate', { profiles: dummyProfiles, topic });
+});
+
 // ここで生成したプロフィールを渡すようにした
 app.get('/debate/:roomId', (req, res) => {
     const roomId = req.params.roomId;
     const profiles = roomProfiles[roomId] || [];
-    res.render('debate', { profiles });
+    const topic = roomThemes[roomId] || '';
+    res.render('debate', { profiles, topic });
 });
 
 //AI同士の議論フェーズ画面（現状まだ独立している）
@@ -132,10 +157,12 @@ io.on('connection', (socket) => {
         io.to(roomId + '-waiting').emit('updateWaitingCount', count, total);
     })
 
-    socket.on('start', (roomId) => {
+    socket.on('start', (roomId, topic) => {
         // roomIdとその人数を記録しておく
         const roomSize = io.sockets.adapter.rooms.get(roomId)?.size || 0;
         roomTotals[roomId] = roomSize;
+        roomThemes[roomId] = topic;
+        console.log('roomThemes:', roomThemes); // 追加
         io.to(roomId).emit('redirect', '/dialog');
     });
 
@@ -143,9 +170,9 @@ io.on('connection', (socket) => {
         io.to(roomId + '-waiting').emit('redirectToDiscussion', `/debate/${roomId}`);
     })
 
-    socket.on('initDialog', async () => {
-        // 第2引数のテーマは現在は仮のテーマにしている
-        await createSession(socket.id, '夜ご飯は何にするか');
+    socket.on('initDialog', async (roomId) => {
+        const topic = roomThemes[roomId] || '夜ご飯は何にするか';
+        await createSession(socket.id, topic);
         // 対話を始めるためのイベント
         socket.emit('dialogReady');
     });

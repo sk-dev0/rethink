@@ -26,6 +26,14 @@
 
     <div class="card shadow-sm mb-4">
         <div class="card-body p-4">
+            <h5 class="card-title"><i class="bi bi-chat-square-text me-2 text-primary"></i>議題を設定</h5>
+            <p class="card-text text-muted small">参加者が議論するテーマを入力してください</p>
+            <input type="text" class="form-control" id="topicInput" placeholder="例: 授業にスマホの使用を認めるべきか">
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
             <h5 class="card-title"><i class="bi bi-play-circle me-2 text-success"></i>対話フェーズを開始</h5>
             <p class="card-text text-muted small">ボタンを押すと全員が同時に対話フェーズに移行します</p>
             <button class="btn btn-success w-100 mt-2" id="startBtn"><i class="bi bi-play-fill me-1"></i>対話フェーズを開始する</button>
@@ -50,6 +58,7 @@
     });
 
     document.getElementById('startBtn').addEventListener('click', () => {
-        socket.emit('start', roomId);
+        const topic = document.getElementById('topicInput').value.trim();
+        socket.emit('start', roomId, topic);
     });
 </script>
