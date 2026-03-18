@@ -39,6 +39,7 @@
     // サーバとSocket.ioの接続を確立
     // この時点でsocket.idが割り当てられる
     const socket = io();
+    const roomId = '<%= roomId %>';
 
     // 接続が完了したらサーバにgeminiセッションの初期化を依頼
     // initDialogイベントはserver.jsに記載あり
@@ -120,7 +121,7 @@
         const response = await fetch('/dialog/profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ socketId: socket.id, history })
+            body: JSON.stringify({ socketId: socket.id, history, roomId })
         });
 
         const data = await response.json();
