@@ -87,6 +87,15 @@ app.get('/index', (req, res) => {
     res.render('index');
 });
 
+//AI同士の議論フェーズ画面（現状まだ独立している）
+app.get('/debate', (req, res) => {
+    res.render('debate');
+});
+
+// AI Debate API
+const debateRoutes = require('./routes/debate');
+app.use('/api/debate', debateRoutes);
+
 app.use((req, res) => {
     res.send('404ページ');
 });

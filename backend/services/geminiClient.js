@@ -3,8 +3,8 @@ const { GoogleGenAI } = require('@google/genai');
 
 const ai = new GoogleGenAI({
     vertexai: true,
-    project: process.env.PROJECT_ID,
-    location: process.env.LOCATION,
+    project: process.env.GOOGLE_CLOUD_PROJECT || process.env.PROJECT_ID,
+    location: process.env.GOOGLE_CLOUD_LOCATION || process.env.LOCATION,
 });
 
 // socketIdをキーにしてchatオブジェクトを保存するオブジェクト
@@ -131,4 +131,61 @@ const generateProfile = async (socketId, history) => {
     return JSON.parse(text);
 }
 
-module.exports = { createSession, getSession, deleteSession, startChat, sendMessage, generateProfile };
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Gemini APIを呼び出す（3回までリトライ）
+// aiインスタンスはファイル上部で生成済みのものを使う
+const callGeminiWithRetry = async (contents, maxRetries = 3, enableSearch = false) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const options = {
+                model: 'gemini-2.5-flash',
+                contents,
+            };
+            if (enableSearch) {
+                options.config = {
+                    tools : [{ googleSearch: {} }],
+                };
+            }
+            const response = await ai.models.generateContent(options);
+            return response.text;
+        } catch (error) {
+            console.error(`API呼び出し失敗 (試行 ${attempt}/${maxRetries}):`, error.message);
+            if (attempt < maxRetries) await delay(2000);
+        }
+    }
+    return null;
+};
+
+/**
+ * 攻撃モードαとγで生成した発言に検索引用が含まれているか確認し、
+ * 含まれていない場合は検索引用を要求して再呼び出しをかける
+ * @param {string} text - 生成されたテキスト
+ * @param {Array} contents - 元のプロンプトcontents
+ * @returns {Promise<string|null>} 最終的なテキスト
+ */
+const callGeminiWithRetryForSearchQuote = async (text, contents) => {
+    const hasSearchCitation = text && text.includes('検索取得:');
+
+    if (hasSearchCitation) return text;
+
+    // 検索引用がない場合は再呼び出し
+    await delay(1000);
+    const additionalInstruction = '\n\n重要: 必ず「検索取得:」という文言を前置きして、実際のウェブ検索結果を1件以上引用してください。情報源のURLまたは組織名と発行日を明示すること。';
+    const retryContents = contents.map((c, i) => {
+        if (i === contents.length - 1 && c.role === 'user') {
+            const parts = c.parts.map((p, j) => {
+                if (j === c.parts.length - 1 && p.text) {
+                    return { text: p.text + additionalInstruction };
+                }
+                return p;
+            });
+            return { ...c, parts };
+        }
+        return c;
+    });
+
+    return await callGeminiWithRetry(retryContents, 3, true);
+};
+
+module.exports = { createSession, getSession, deleteSession, startChat, sendMessage, generateProfile, delay, callGeminiWithRetry, callGeminiWithRetryForSearchQuote };
