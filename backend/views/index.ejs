@@ -1,19 +1,38 @@
 <% layout('layout/boilerplates') %>
 
-<h1>新しいルームを作成</h1>
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="text-center mb-5">
+        <h1>DebateAI</h1>
+        <p class="text-muted">AIが議論を行い人間の議論への橋渡しをします。ルームを作成して参加者を招待してください</p>
+    </div>
 
-<!-- コピー機能は後日実装予定 -->
-<p>ホスト用URL:</p>
-<input type="text" class="form-control" value="http://localhost:3000/room/<%= roomId %>/host" readonly>
-<button class="btn btn-primary mt-2" id="copyBtn">URLをコピー</button>
+    <div class="card shadow mb-4 border-primary">
+        <div class="card-body p-4">
+            <h5 class="card-title text-primary"><i class="bi bi-person-gear me-2"></i>ホスト用URL</h5>
+            <p class="card-text text-muted small">このURLはあなただけが使用してください</p>
+            <input type="text" class="form-control mb-2" id="hostUrl" value="http://localhost:3000/room/<%= roomId %>/host" readonly>
+            <button class="btn btn-primary w-100" onclick="copyUrl('hostUrl')"><i class="bi bi-clipboard me-1"></i>URLをコピー</button>
+        </div>
+    </div>
 
-<p>参加者招待URL</p>
-<input type="text" class="form-control" value="http://localhost:3000/room/<%= roomId %>" readonly>
-<button class="btn btn-primary mt-2" id="copyBtn">URLをコピー</button>
+    <div class="card shadow mb-4 border-success">
+        <div class="card-body p-4">
+            <h5 class="card-title text-success"><i class="bi bi-people me-2"></i>参加者招待URL</h5>
+            <p class="card-text text-muted small">このURLを参加者に共有してください</p>
+            <input type="text" class="form-control mb-2" id="guestUrl" value="http://localhost:3000/room/<%= roomId %>" readonly>
+            <button class="btn btn-success w-100" onclick="copyUrl('guestUrl')"><i class="bi bi-clipboard me-1"></i>URLをコピー</button>
+        </div>
+    </div>
+</div>
 
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
-    console.log('Socket.io読み込み完了');
+    
+    function copyUrl (id) {
+        const input = document.getElementById(id);
+        navigator.clipboard.writeText(input.value);
+        alert('コピーしました！');
+    }
 </script>
