@@ -125,7 +125,7 @@
 
         const data = await response.json();
         // 待機画面に遷移
-        window.location.href = '/waiting/<%= roomId %>';
+        window.location.href = '/waiting/<%= roomId %><%= isHost ? "/host" : "" %>';
     })
      
 </script>
