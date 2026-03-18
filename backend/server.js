@@ -15,6 +15,8 @@ const io = new Server(server);
 
 // 参加人数を管理するためのオブジェクト
 const roomTotals = {};
+// ルームごとのプロフィールを管理するオブジェクト
+const roomProfiles = {};
 
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
@@ -59,9 +61,10 @@ app.post('/dialog/message', async (req, res) => {
 });
 
 app.post('/dialog/profile', async (req, res) => {
-    const { socketId, history } = req.body;
+    const { socketId, history, roomId } = req.body;
     const profile = await generateProfile(socketId, history);
-    req.session.profile = profile;
+    if (!roomProfiles[roomId]) roomProfiles[roomId] = [];
+    roomProfiles[roomId].push(profile);
     //ユーザーが増え続ける限り、チャットのキャッシュが残り続けるため削除する。
     deleteSession(socketId);
     res.json({ profile });
@@ -85,6 +88,13 @@ app.get('/discussion', (req, res) => {
 
 app.get('/index', (req, res) => {
     res.render('index');
+});
+
+// ここで生成したプロフィールを渡すようにした
+app.get('/debate/:roomId', (req, res) => {
+    const roomId = req.params.roomId;
+    const profiles = roomProfiles[roomId] || [];
+    res.render('debate', { profiles });
 });
 
 //AI同士の議論フェーズ画面（現状まだ独立している）
@@ -135,7 +145,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('startDiscussion', (roomId) => {
-        io.to(roomId + '-waiting').emit('redirectToDiscussion', '/discussion');
+        io.to(roomId + '-waiting').emit('redirectToDiscussion', `/debate/${roomId}`);
     })
 
     socket.on('initDialog', async () => {
