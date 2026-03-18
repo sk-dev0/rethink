@@ -1,7 +1,39 @@
 <% layout('layout/boilerplates') %>
 
-<h1>ロビー</h1>
-<p>ルームID: <%= roomId %></p>
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="text-center mb-4">
+        <h1 class="fw-bold">ロビー</h1>
+        <p class="text-muted">ホストが対話フェーズを開始するまでお待ちください</p>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h5 class="card-title"><i class="bi bi-info-circle me-2 text-primary"></i>このアプリについて</h5>
+            <p class="card-text text-muted small">
+                参加者はAIと1対1で対話を行い、テーマに対する自分の考えを整理します。
+                全員の対話が完了したら、AIが各参加者の意見をもとに議論を行います。
+            </p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4 border-primary">
+        <div class="card-body p-4">
+            <h5 class="card-title text-primary"><i class="bi bi-people me-2"></i>参加状況</h5>
+            <p class="card-text text-muted small">現在ロビーに参加している人数です</p>
+            <h2 class="text-center fw-bold"><span id="count">0</span><span class="fs-5 text-muted"> 人が参加中</span></h2>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4 text-center">
+            <h5 class="card-title"><i class="bi bi-hourglass-split me-2 text-warning"></i>開始待ち</h5>
+            <p class="card-text text-muted small">ホストが開始ボタンを押すと対話フェーズに移行します</p>
+            <div class="spinner-border text-primary mt-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -11,10 +43,11 @@
     socket.emit('joinRoom', roomId);
 
     socket.on('updateCount', (count) => {
-        console.log('現在の参加人数:', count);
+        document.getElementById('count').textContent = count;
     });
 
+    // dialogページに遷移する際にソケットIDとルームIDを渡す
     socket.on('redirect', (url) => {
-        window.location.href = url + '?socketId=' + socket.id;
+        window.location.href = url + '?socketId=' + socket.id + '&roomId=' + '<%= roomId %>';
     });
 </script>
