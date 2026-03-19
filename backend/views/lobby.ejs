@@ -42,12 +42,18 @@
 
     socket.emit('joinRoom', roomId);
 
-    socket.on('updateCount', (count) => {
-        document.getElementById('count').textContent = count;
+    socket.on('updateCount', (count, max) => {
+        document.getElementById('count').textContent = count + ' / ' + max;
     });
 
     // dialogページに遷移する際にソケットIDとルームIDを渡す
     socket.on('redirect', (url) => {
         window.location.href = url + '?socketId=' + socket.id + '&roomId=' + '<%= roomId %>';
+    });
+
+    // ルームが満員の時の処理
+    socket.on('roomFull', () => {
+        alert('このルームは満員です。参加できません。');
+        window.location.href = '/';
     });
 </script>

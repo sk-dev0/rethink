@@ -48,8 +48,8 @@
 
     socket.emit('joinRoom', roomId);
 
-    socket.on('updateCount', (count) => {
-        document.getElementById('count').textContent = count;
+    socket.on('updateCount', (count, max) => {
+        document.getElementById('count').textContent = count + ' / ' + max;
     });
 
     // dialogページに遷移する際にソケットIDとルームIDを渡す

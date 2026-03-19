@@ -19,6 +19,8 @@ const roomTotals = {};
 const roomProfiles = {};
 // 議題・テーマ管理のためのオブジェクト
 const roomThemes = {};
+// 参加人数を管理するためのオブジェクト
+const roomMaxParticipants = {};
 
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
@@ -39,6 +41,8 @@ app.get('/', (req, res) => {
 
 app.get('/room/:roomId/host', (req, res) => {
     const roomId = req.params.roomId;
+    const max = parseInt(req.query.max) || 4;
+    roomMaxParticipants[roomId] = max;
     res.render('host', { roomId });
 });
 
@@ -108,6 +112,20 @@ app.get('/debug/debate', (req, res) => {
             rationale: 'SNSやゲームへの誘惑があり、集中力が低下する',
             preconditions: '自己管理が難しい年齢層を対象とした場合に限る',
             experience: 'スマホを持ち込んだクラスでは授業中の私語や脱線が増えた'
+        },
+        {
+            socketId: 'dummy-3',
+            core_claim: '授業の内容や状況に応じて柔軟に判断すべきだ',
+            rationale: '一律禁止や許可より、場面に応じた使い分けが現実的である',
+            preconditions: '教師と生徒が使用ルールについて合意形成できることが前提',
+            experience: '実際に教科によってスマホの有用性が大きく異なると感じた'
+        },
+        {
+            socketId: 'dummy-4',
+            core_claim: '保護者や地域社会も含めた幅広い議論が必要だ',
+            rationale: 'スマホの使用は学校だけの問題ではなく家庭環境にも依存するため',
+            preconditions: '学校単独での決定ではなく保護者との合意が必要である',
+            experience: '保護者間でスマホの使用方針が異なり学校のルールと家庭のルールが矛盾することを経験した'
         }
     ];
     const topic = '授業にスマホの使用を認めるべきか';
@@ -139,10 +157,19 @@ io.on('connection', (socket) => {
     console.log('接続されました:', socket.id);
 
     socket.on('joinRoom', (roomId) => {
+        // 参加人数を渡し、設定した人数を超えていたら受け付けないようにする
+        const currentSize = io.sockets.adapter.rooms.get(roomId)?.size || 0;
+        const max = roomMaxParticipants[roomId] || 4;
+        
+        if (currentSize >= max) {
+            socket.emit('roomFull');
+            return;
+        }
+
         socket.join(roomId);
         console.log(`${socket.id}がルーム ${roomId} に参加しました`);
 
-        io.to(roomId).emit('updateCount', io.sockets.adapter.rooms.get(roomId).size);
+        io.to(roomId).emit('updateCount', io.sockets.adapter.rooms.get(roomId).size, max);
     });
 
     socket.on('joinWaiting', (roomId) => {
