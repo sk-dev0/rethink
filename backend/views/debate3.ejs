@@ -142,6 +142,12 @@
     scroll-margin-top: 1.5rem;
   }
 
+  .debate-phase-description {
+    margin: -0.35rem 0 1rem;
+    color: #5f6b76;
+    line-height: 1.7;
+  }
+
   @media (max-width: 991px) {
     .debate-index-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -175,7 +181,7 @@
           class="form-control"
           rows="3"
           placeholder="例: 新しいプロダクトの UI 設計において、どちらのアプローチが優れているか"
-        ></textarea>
+        >大学の講義に AI を導入するべきかどうか</textarea><!-- コメント: デモ開始用の議題 -->
       </div>
 
       <div id="agentsContainer" class="row mb-3">
@@ -186,19 +192,19 @@
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">主張</label>
-              <textarea class="form-control border-primary agent-claim" rows="2" placeholder="例: シンプルで運用しやすいデザインを採用する"></textarea>
+              <textarea class="form-control border-primary agent-claim" rows="2" placeholder="例: シンプルで運用しやすいデザインを採用する">大学の講義には AI を活用すべきです。個別最適化された支援が可能になります。</textarea><!-- コメント: デモ開始用のエージェントA主張 -->
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">理由</label>
-              <textarea class="form-control border-primary agent-rationale" rows="2" placeholder="例: ユーザー調査ではシンプルな UI の定着率が高く、学習コストも低い"></textarea>
+              <textarea class="form-control border-primary agent-rationale" rows="2" placeholder="例: ユーザー調査ではシンプルな UI の定着率が高く、学習コストも低い">理解度に応じた補助や質問対応ができ、学習体験の質を高められるためです。</textarea><!-- コメント: デモ開始用のエージェントA理由 -->
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">前提条件</label>
-              <textarea class="form-control border-primary agent-preconditions" rows="2" placeholder="例: ターゲットユーザーは説明不要で直感的に使えることを重視する"></textarea>
+              <textarea class="form-control border-primary agent-preconditions" rows="2" placeholder="例: ターゲットユーザーは説明不要で直感的に使えることを重視する">教員の負担を増やさず、学生が主体的に使える設計であることを前提にします。</textarea><!-- コメント: デモ開始用のエージェントA前提条件 -->
             </div>
             <div class="mb-0">
               <label class="form-label small fw-semibold">立場を支える経験・知識</label>
-              <textarea class="form-control border-primary agent-experience" rows="2" placeholder="例: 過去に担当したサービスで、複雑な UI よりもシンプルな設計が成果につながった"></textarea>
+              <textarea class="form-control border-primary agent-experience" rows="2" placeholder="例: 過去に担当したサービスで、複雑な UI よりもシンプルな設計が成果につながった">教育現場での学習支援ツールの活用事例を参考にしています。</textarea><!-- コメント: デモ開始用のエージェントA経験・知識 -->
             </div>
           </div>
         </div>
@@ -210,19 +216,19 @@
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">主張</label>
-              <textarea class="form-control border-danger agent-claim" rows="2" placeholder="例: 情報量を増やしてパワーユーザー向けの設計を採用する"></textarea>
+              <textarea class="form-control border-danger agent-claim" rows="2" placeholder="例: 情報量を増やしてパワーユーザー向けの設計を採用する">大学の講義への AI 導入には慎重であるべきです。過度な依存が学習の本質を損なう可能性があります。</textarea><!-- コメント: デモ開始用のエージェントB主張 -->
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">理由</label>
-              <textarea class="form-control border-danger agent-rationale" rows="2" placeholder="例: 上級ユーザーの 80% が一覧性と操作効率を重視している"></textarea>
+              <textarea class="form-control border-danger agent-rationale" rows="2" placeholder="例: 上級ユーザーの 80% が一覧性と操作効率を重視している">思考の代替として AI を使うと、学生自身の考える力や対話力が弱まるおそれがあるためです。</textarea><!-- コメント: デモ開始用のエージェントB理由 -->
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">前提条件</label>
-              <textarea class="form-control border-danger agent-preconditions" rows="2" placeholder="例: 上級ユーザーの継続利用が成功の鍵になる"></textarea>
+              <textarea class="form-control border-danger agent-preconditions" rows="2" placeholder="例: 上級ユーザーの継続利用が成功の鍵になる">評価制度や授業設計が AI 利用を前提に最適化されていない状況を想定します。</textarea><!-- コメント: デモ開始用のエージェントB前提条件 -->
             </div>
             <div class="mb-0">
               <label class="form-label small fw-semibold">立場を支える経験・知識</label>
-              <textarea class="form-control border-danger agent-experience" rows="2" placeholder="例: ヘビーユーザー向け機能の強化で成果が出た事例を参考にしている"></textarea>
+              <textarea class="form-control border-danger agent-experience" rows="2" placeholder="例: ヘビーユーザー向け機能の強化で成果が出た事例を参考にしている">授業支援ツールが意図せず学習の丸投げにつながった事例を参考にしています。</textarea><!-- コメント: デモ開始用のエージェントB経験・知識 -->
             </div>
           </div>
         </div>
@@ -346,6 +352,7 @@
   <div id="resultArea" class="d-none">
     <div class="mb-4 debate-phase-section" data-phase-index="0">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ1: 意見表明</h2>
+      <p class="debate-phase-description">初期主張と前提を整理し、議論の出発点を確認します。</p>
       <div class="accordion" id="phase1Accordion">
         <div id="phase1Content"></div>
       </div>
@@ -353,6 +360,7 @@
 
     <div class="mb-4 debate-phase-section" data-phase-index="1">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ2: 反論・情報取得</h2>
+      <p class="debate-phase-description">相手の論点を分析し、根拠と反論の材料を集めます。</p>
       <div class="accordion" id="phase2Accordion">
         <div id="phase2Content"></div>
       </div>
@@ -360,6 +368,7 @@
 
     <div class="mb-4 debate-phase-section" data-phase-index="2">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ3: サブ議題議論</h2>
+      <p class="debate-phase-description">主要論点を分解し、論点ごとの議論を深掘りします。</p>
       <div class="accordion" id="phase3Accordion">
         <div id="phase3Content"></div>
       </div>
@@ -367,6 +376,7 @@
 
     <div class="mb-4 debate-phase-section" data-phase-index="3">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ4: 統合表明とまとめ</h2>
+      <p class="debate-phase-description">最終ラウンドと総括に向けて、結論と統合視点を確認します。</p>
       <div id="phase4Content"></div>
       <div id="phase4SummaryMount" class="mt-4"></div>
     </div>
