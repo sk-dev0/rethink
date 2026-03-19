@@ -67,6 +67,9 @@
 
     // 会話履歴をフロント側で持つための配列
     const history = [];
+    // 往復回数制限のため
+    let turnCount = 0;
+    const maxTurns = 10; 
 
     // メッセージをチャット画面に追加する関数
     // senderがuserなら右側に青色背景、aiなら左側に灰色背景で表示
@@ -112,6 +115,21 @@
             addMessage(data.reply, 'ai');
             // aiの返答を会話履歴に追加
             history.push({ role: 'ai', text: data.reply });
+
+            turnCount++;
+            if (turnCount >= maxTurns) {
+                const finishResponse = await fetch('/dialog/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ socketId: socket.id, message: 'これまでの会話をもとに、インタビューを終了してください。' })
+                });
+                const finishData = await finishResponse.json();
+                addMessage(finishData.reply, 'ai');
+                history.push({ role: 'ai', text: finishData.reply });
+                document.getElementById('sendBtn').disabled = true;
+                document.getElementById('endBtn').disabled = false;
+                document.getElementById('endAlert').style.display = 'block';
+            }
 
             document.getElementById('sendBtn').disabled = false;
             document.getElementById('messageInput').disabled = false; 

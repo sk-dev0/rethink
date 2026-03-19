@@ -35,9 +35,9 @@
 
     <div class="card shadow-sm mb-4">
         <div class="card-body p-4">
-            <h5 class="card-title"><i class="bi bi-chat-square-text me-2 text-primary"></i>議題を設定</h5>
-            <p class="card-text text-muted small">参加者が議論するテーマを入力してください</p>
-            <input type="text" class="form-control" id="topicInput" placeholder="例: 授業にスマホの使用を認めるべきか">
+            <h5 class="card-title"><i class="bi bi-chat-square-text me-2 text-primary"></i>議題・前提条件を設定</h5>
+            <p class="card-text text-muted small">議題と前提条件をまとめて入力してください</p>
+            <textarea class="form-control" id="topicInput" rows="6" placeholder="例: リモートワークは原則化すべきか&#10;&#10;前提条件:&#10;・対象はデスクワーク中心の職種&#10;・技術的インフラは整っているものとする"></textarea>
         </div>
     </div>
 
@@ -71,7 +71,7 @@
     document.getElementById('startBtn').addEventListener('click', () => {
         const topic = document.getElementById('topicInput').value.trim();
         if (!topic) {
-            alert('議題を入力してください');
+            alert('議題・前提条件を入力してください');
             return;
         }
         const countText = document.getElementById('count').textContent;
