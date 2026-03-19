@@ -263,7 +263,6 @@ const renderPhase3 = (phase3) => {
             }).join('') +
             '</div>';
 
-        const titleText = `${esc(st.title || `サブ議題${i + 1}`)}${depthBadge}`;
         // ボタンのテキストにバッジHTMLを含めたいのでescを使わずinnerHTMLとして挿入
         const itemId = `p3_${i}`;
         const showClass = i === 0 ? 'show' : '';
@@ -326,6 +325,108 @@ const renderPhase4 = (phase4) => {
 };
 
 /* =============================
+   描画: マインドマップ
+============================= */
+
+const renderMindmap = async (diagramCode) => {
+    const container = document.getElementById('mindmapContent');
+    const card = container.closest('.card');
+    const dlBtn = document.getElementById('downloadMindmapBtn');
+    if (!diagramCode) {
+        card.classList.add('d-none');
+        dlBtn.classList.add('d-none');
+        return;
+    }
+    container.innerHTML = '';
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+    const id = 'mindmap_' + Date.now();
+    const { svg } = await mermaid.render(id, diagramCode);
+    container.innerHTML = svg;
+    const svgEl = container.querySelector('svg');
+    if (svgEl) svgEl.style.width = '100%';
+    dlBtn.classList.remove('d-none');
+};
+
+const downloadMindmap = () => {
+    const svgEl = document.querySelector('#mindmapContent svg');
+    if (!svgEl) return;
+
+    // viewBox から実寸を取得（なければ getBoundingClientRect にフォールバック）
+    let width, height;
+    const vb = svgEl.getAttribute('viewBox');
+    if (vb) {
+        const parts = vb.trim().split(/[\s,]+/);
+        width = parseFloat(parts[2]);
+        height = parseFloat(parts[3]);
+    }
+    if (!width || !height) {
+        const rect = svgEl.getBoundingClientRect();
+        width = rect.width || 1200;
+        height = rect.height || 800;
+    }
+
+    // SVG を複製して白背景・固定サイズを付与
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute('width', width);
+    clone.setAttribute('height', height);
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.setAttribute('width', '100%');
+    bg.setAttribute('height', '100%');
+    bg.setAttribute('fill', 'white');
+    clone.insertBefore(bg, clone.firstChild);
+
+    const svgData = new XMLSerializer().serializeToString(clone);
+
+    // data: URL 方式（blob URL より Canvas との互換性が高い）
+    const bytes = new TextEncoder().encode(svgData);
+    const binary = bytes.reduce((acc, b) => acc + String.fromCharCode(b), '');
+    const base64 = btoa(binary);
+    const imgSrc = 'data:image/svg+xml;base64,' + base64;
+
+    // 2倍解像度で Canvas に描画して PNG ダウンロード
+    const scale = 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+
+    const img = new Image();
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                // PNG 変換失敗時は SVG を直接ダウンロード
+                const svgBlobFallback = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(svgBlobFallback);
+                a.download = 'mindmap.svg';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                return;
+            }
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'mindmap.png';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }, 'image/png');
+    };
+    img.onerror = () => {
+        // PNG 変換失敗時は SVG を直接ダウンロード
+        const svgBlobFallback = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(svgBlobFallback);
+        a.download = 'mindmap.svg';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    };
+    img.src = imgSrc;
+};
+
+/* =============================
    議論開始
 ============================= */
 
@@ -370,6 +471,7 @@ const startDebate = async () => {
         renderPhase2(data.phase2);
         renderPhase3(data.phase3);
         renderPhase4(data.phase4);
+        await renderMindmap(data.mindmap);
 
         document.getElementById('resultArea').classList.remove('d-none');
         document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
@@ -389,4 +491,5 @@ const startDebate = async () => {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('startBtn').addEventListener('click', startDebate);
     document.getElementById('addAgentBtn').addEventListener('click', addAgentCard);
+    document.getElementById('downloadMindmapBtn').addEventListener('click', downloadMindmap);
 });

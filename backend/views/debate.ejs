@@ -158,10 +158,24 @@
         </div>
       </div>
 
+      <!-- マインドマップ -->
+      <div class="card border-info shadow-sm mt-4">
+        <div class="card-header bg-info text-white fw-semibold d-flex justify-content-between align-items-center">
+          <span>マインドマップ</span>
+          <button id="downloadMindmapBtn" class="btn btn-sm btn-light d-none" type="button">
+            画像を保存（PNG）
+          </button>
+        </div>
+        <div class="card-body">
+          <div id="mindmapContent" style="width:100%;overflow-x:auto;"></div>
+        </div>
+      </div>
+
     </div>
 
   </div>
 
 </div>
 
+<% block('script').append('<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>') %>
 <% block('script').append('<script src="/js/main.js"></script>') %>

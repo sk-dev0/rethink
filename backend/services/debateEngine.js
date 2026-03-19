@@ -23,7 +23,7 @@ const {
     addTopicsToList,
     topicsToString,
 } = require('./topicTracker');
-const { runFinalSummary } = require('./resultService');
+const { runFinalSummary, buildMindmapCode } = require('./resultService');
 const {
     SUB_TOPIC_MAX,
     PHASE3_ATTACK_MODES,
@@ -241,11 +241,21 @@ const runDebate = async (topic, agents, maxTurns) => {
 
     console.log('[Phase4] 完了');
 
-    return {
+    // =============================
+    // マインドマップ生成
+    // =============================
+    console.log('[Mindmap] マインドマップ生成');
+    const partialResult = {
         phase1: phase1Results,
         phase2: phase2Result,
         phase3: phase3Results,
         phase4: phase4Result,
+    };
+    const mindmap = await buildMindmapCode(topic, agents, partialResult);
+
+    return {
+        ...partialResult,
+        mindmap,
     };
 };
 
