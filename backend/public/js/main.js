@@ -224,7 +224,7 @@ const renderPhase2 = (phase2) => {
 <p class="mb-1"><strong>価値前提:</strong></p><ul>${values}</ul>`;
     }).join('<hr>');
     container.insertAdjacentHTML('beforeend',
-        createAccordionItem('phase2Accordion', 'p2_decomp', 'Step4: 要素分解', decompositionHtml)
+        createAccordionItem('phase2Accordion', 'p2_decomp', 'Step5: 要素分解', decompositionHtml)
     );
 };
 
