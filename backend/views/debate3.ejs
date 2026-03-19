@@ -139,7 +139,24 @@
   }
 
   .debate-phase-section {
+    /* コメント: 各フェーズ結果全体を目次と同系統のカードUIで囲む */
+    padding: 1.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.75rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    background: #fff;
     scroll-margin-top: 1.5rem;
+  }
+
+  .debate-phase-section > h2 {
+    /* コメント: カード内見出しの余白を整える */
+    margin-bottom: 1rem !important;
+  }
+
+  .debate-phase-section .accordion,
+  .debate-phase-section #phase4Content {
+    /* コメント: 見出し直下の結果本体との間隔を統一する */
+    margin-top: 0.5rem;
   }
 
   .debate-phase-description {
