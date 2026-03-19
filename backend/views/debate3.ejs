@@ -1,4 +1,4 @@
-<% layout('layout/boilerplates') %>
+﻿<% layout('layout/boilerplates') %>
 <% block('style').append('<link href="/css/debate.css" rel="stylesheet">') %>
 <% block('style').append(`
 <style>
@@ -259,6 +259,7 @@
     </div>
   </div>
 
+  <div id="summaryOverviewMount"></div>
   <section id="summaryReportSection" class="d-none mb-4">
     <div class="card border-success shadow-sm">
       <div class="card-header bg-success text-white fw-semibold">
@@ -367,6 +368,7 @@
     <div class="mb-4 debate-phase-section" data-phase-index="3">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ4: 統合表明とまとめ</h2>
       <div id="phase4Content"></div>
+      <div id="phase4SummaryMount" class="mt-4"></div>
     </div>
   </div>
 </div>
@@ -376,13 +378,15 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const resultArea = document.getElementById('resultArea');
+    const summaryOverviewMount = document.getElementById('summaryOverviewMount');
     const summarySection = document.getElementById('summaryReportSection');
     const indexSection = document.getElementById('debateIndexSection');
     const phaseSections = Array.from(resultArea?.querySelectorAll('.debate-phase-section') || []);
     const indexCards = Array.from(indexSection?.querySelectorAll('.debate-index-card') || []);
+    const phase4SummaryMount = document.getElementById('phase4SummaryMount');
 
-    if (!resultArea || !summarySection || !indexSection || !phaseSections.length) return;
-    if (document.getElementById('debatePhaseNav')) return;
+    if (!resultArea || !summarySection || !summaryOverviewMount || !indexSection || !phaseSections.length) return;
+    if (document.getElementById('debatePhaseNavBottom')) return;
 
     const createPhaseNav = (navId) => {
       const nav = document.createElement('div');
@@ -396,12 +400,22 @@
       return nav;
     };
 
-    const topNav = createPhaseNav('debatePhaseNav');
     const bottomNav = createPhaseNav('debatePhaseNavBottom');
-    resultArea.insertAdjacentElement('afterbegin', topNav);
     resultArea.insertAdjacentElement('beforeend', bottomNav);
 
     let currentPhaseIndex = 0;
+
+    const placeSummaryInOverview = () => {
+      if (summaryOverviewMount.nextElementSibling !== summarySection) {
+        summaryOverviewMount.insertAdjacentElement('afterend', summarySection);
+      }
+    };
+
+    const placeSummaryInPhase4 = () => {
+      if (phase4SummaryMount && phase4SummaryMount.firstElementChild !== summarySection) {
+        phase4SummaryMount.replaceChildren(summarySection);
+      }
+    };
 
     const hideAllPhaseSections = () => {
       phaseSections.forEach((section) => {
@@ -418,9 +432,9 @@
 
     const syncResultSectionsVisibility = () => {
       const shouldHide = resultArea.classList.contains('d-none');
+      placeSummaryInOverview();
       summarySection.classList.toggle('d-none', shouldHide);
       indexSection.classList.toggle('d-none', shouldHide);
-      topNav.classList.toggle('d-none', true);
       bottomNav.classList.toggle('d-none', true);
       hideAllPhaseSections();
       setActiveIndexCard(-1);
@@ -428,7 +442,7 @@
 
     const renderOverview = () => {
       hideAllPhaseSections();
-      topNav.classList.add('d-none');
+      placeSummaryInOverview();
       bottomNav.classList.add('d-none');
       summarySection.classList.remove('d-none');
       indexSection.classList.remove('d-none');
@@ -442,16 +456,20 @@
 
       currentPhaseIndex = phaseIndex;
       hideAllPhaseSections();
-      summarySection.classList.add('d-none');
       indexSection.classList.add('d-none');
-      topNav.classList.remove('d-none');
       bottomNav.classList.remove('d-none');
       targetSection.classList.remove('d-none');
 
-      [topNav, bottomNav].forEach((nav) => {
-        nav.querySelector('[data-action="prev"]').classList.toggle('d-none', phaseIndex === 0);
-        nav.querySelector('[data-action="next"]').classList.toggle('d-none', phaseIndex === phaseSections.length - 1);
-      });
+      if (phaseIndex === 3) {
+        placeSummaryInPhase4();
+        summarySection.classList.remove('d-none');
+      } else {
+        placeSummaryInOverview();
+        summarySection.classList.add('d-none');
+      }
+
+      bottomNav.querySelector('[data-action="prev"]').classList.toggle('d-none', phaseIndex === 0);
+      bottomNav.querySelector('[data-action="next"]').classList.toggle('d-none', phaseIndex === phaseSections.length - 1);
 
       setActiveIndexCard(phaseIndex);
       targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -465,7 +483,6 @@
       if (action === 'index') renderOverview();
     };
 
-    topNav.addEventListener('click', handleNavClick);
     bottomNav.addEventListener('click', handleNavClick);
 
     indexCards.forEach((card) => {
