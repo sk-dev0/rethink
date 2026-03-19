@@ -2,16 +2,16 @@
 <% block('style').append('<link href="/css/debate.css" rel="stylesheet">') %>
 <% block('style').append(`
 <style>
-  /* Detail UI border tokens: keep all outline colors and widths consistent */
+  /* 詳細UIの境界線用トークン: 枠線の色と太さを統一する */
   :root {
     --detail-border-color: #111;
     --detail-border-width: 3px;
   }
 
-  /* Detail UI: overview and per-phase navigation live only in debate2.ejs */
+  /* 詳細UI: 目次画面とフェーズ別ナビゲーションは debate2.ejs のみで管理する */
   .debate-detail-root {
     margin-top: 2rem;
-    /* Detail UI font: inherit the same font used by the input card area */
+    /* 詳細UIのフォント: 入力カードと同じフォント設定を引き継ぐ */
     font-family: inherit;
   }
 
@@ -87,19 +87,20 @@
   }
 
   .debate-detail-card {
-    /* Detail result card: align the border feel with the input card */
+    /* 詳細結果カード: 入力カードと同じ境界線の見え方にそろえる */
     border: 1px solid rgba(0, 0, 0, 0.125);
     border-radius: 0.375rem;
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
   }
 
-  /* Detail view: hide the topic card and keep only the phase card visible */
-  #debatePhaseView .debate-detail-card:first-child {
+  /* 詳細画面: 議題カードを隠し、フェーズカードだけを表示する */
+  /* 直下の1枚目だけを隠し、フェーズ4内で複製されたカードは隠さない */
+  #debatePhaseView > .debate-detail-card:first-child {
     display: none;
   }
 
   .debate-detail-card .card-header {
-    /* Detail result card header: use the same card border tone as the input card */
+    /* 詳細結果カードのヘッダー: 入力カードと同じ境界線トーンを使う */
     background: rgba(0, 0, 0, 0.03);
     border-bottom: 1px solid rgba(0, 0, 0, 0.125);
     font-weight: 700;
@@ -107,7 +108,7 @@
 
   .debate-detail-card .card-body,
   .debate-detail-actions .btn {
-    /* Detail UI font: keep cards and buttons on the inherited page font */
+    /* 詳細UIのフォント: カードとボタンもページの継承フォントを使う */
     font-family: inherit;
   }
 
@@ -165,7 +166,7 @@
           class="form-control"
           rows="3"
           placeholder="例: 新しいプロダクトのUI設計において、どちらのアプローチが優れているか"
-        >大学の授業にはAIを標準的な学習ツールとして導入すべきである。</textarea><!-- DEMO_PRESET: remove this seeded topic text when the demo ends -->
+        >大学の授業にはAIを標準的な学習ツールとして導入すべきである。</textarea><!-- デモ用プリセット: デモ終了時にこの議題文を削除する -->
       </div>
 
       <!-- エージェントカード群 -->
@@ -178,19 +179,19 @@
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">主張（core_claim）</label>
-              <textarea class="form-control border-primary agent-claim" rows="2" placeholder="例: シンプルで直感的なデザインを優先する">大学は通常の授業にAIツールを導入すべきであり、それによって学習効率が上がり、社会で必要となる実践的な活用力も身につく。</textarea><!-- DEMO_PRESET: Agent A claim -->
+              <textarea class="form-control border-primary agent-claim" rows="2" placeholder="例: シンプルで直感的なデザインを優先する">大学は通常の授業にAIツールを導入すべきであり、それによって学習効率が上がり、社会で必要となる実践的な活用力も身につく。</textarea><!-- デモ用プリセット: エージェントAの主張 -->
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">根拠（rationale）</label>
-              <textarea class="form-control border-primary agent-rationale" rows="2" placeholder="例: ユーザー調査でシンプルなUIの満足度が高く、離脱率が低い実績がある">すでに学生は授業外でAIを使っている。正式に授業へ組み込めば、教員が検証方法や引用ルール、責任ある使い方まで指導できる。</textarea><!-- DEMO_PRESET: Agent A rationale -->
+              <textarea class="form-control border-primary agent-rationale" rows="2" placeholder="例: ユーザー調査でシンプルなUIの満足度が高く、離脱率が低い実績がある">すでに学生は授業外でAIを使っている。正式に授業へ組み込めば、教員が検証方法や引用ルール、責任ある使い方まで指導できる。</textarea><!-- デモ用プリセット: エージェントAの根拠 -->
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">前提条件（preconditions）</label>
-              <textarea class="form-control border-primary agent-preconditions" rows="2" placeholder="例: ターゲットユーザーは技術に詳しくない一般層である">教員がAI利用ルールを明確に示し、出典確認を必須にし、単なる出力ではなく思考過程を評価する課題設計を行うことが前提である。</textarea><!-- DEMO_PRESET: Agent A preconditions -->
+              <textarea class="form-control border-primary agent-preconditions" rows="2" placeholder="例: ターゲットユーザーは技術に詳しくない一般層である">教員がAI利用ルールを明確に示し、出典確認を必須にし、単なる出力ではなく思考過程を評価する課題設計を行うことが前提である。</textarea><!-- デモ用プリセット: エージェントAの前提条件 -->
             </div>
             <div class="mb-0">
               <label class="form-label small fw-semibold">立場を支える具体的な事実・経験（任意）</label>
-              <textarea class="form-control border-primary agent-experience" rows="2" placeholder="例: 実際に使ったユーザーからシンプルなUIの方が迷わないという声を聞いた">初年次ゼミでAI支援の文章作成を試験導入した経験があり、学生の推敲の質が上がる場面を観察した。</textarea><!-- DEMO_PRESET: Agent A experience -->
+              <textarea class="form-control border-primary agent-experience" rows="2" placeholder="例: 実際に使ったユーザーからシンプルなUIの方が迷わないという声を聞いた">初年次ゼミでAI支援の文章作成を試験導入した経験があり、学生の推敲の質が上がる場面を観察した。</textarea><!-- デモ用プリセット: エージェントAの具体例・経験 -->
             </div>
           </div>
         </div>
@@ -203,19 +204,19 @@
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">主張（core_claim）</label>
-              <textarea class="form-control border-danger agent-claim" rows="2" placeholder="例: 機能を豊富に揃えたパワーユーザー向けデザインを優先する">大学の授業でのAI利用は制限すべきであり、依存が進むと基礎的な思考力が弱まり、本来の学力評価も難しくなる。</textarea><!-- DEMO_PRESET: Agent B claim -->
+              <textarea class="form-control border-danger agent-claim" rows="2" placeholder="例: 機能を豊富に揃えたパワーユーザー向けデザインを優先する">大学の授業でのAI利用は制限すべきであり、依存が進むと基礎的な思考力が弱まり、本来の学力評価も難しくなる。</textarea><!-- デモ用プリセット: エージェントBの主張 -->
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">根拠（rationale）</label>
-              <textarea class="form-control border-danger agent-rationale" rows="2" placeholder="例: 上位20%のヘビーユーザーが売上の80%を占め、彼らは機能の多さを評価している">AIが課題の大部分を作ってしまうと、特に学習初期の学生は内容を十分理解しないまま整った答案だけを提出できてしまう。</textarea><!-- DEMO_PRESET: Agent B rationale -->
+              <textarea class="form-control border-danger agent-rationale" rows="2" placeholder="例: 上位20%のヘビーユーザーが売上の80%を占め、彼らは機能の多さを評価している">AIが課題の大部分を作ってしまうと、特に学習初期の学生は内容を十分理解しないまま整った答案だけを提出できてしまう。</textarea><!-- デモ用プリセット: エージェントBの根拠 -->
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">前提条件（preconditions）</label>
-              <textarea class="form-control border-danger agent-preconditions" rows="2" placeholder="例: ユーザーの多様なニーズに応えるためには機能の幅が必要である">少なくとも基礎科目では、まず自力で読む・書く・考える力を確立してからAIを広く導入すべきである。</textarea><!-- DEMO_PRESET: Agent B preconditions -->
+              <textarea class="form-control border-danger agent-preconditions" rows="2" placeholder="例: ユーザーの多様なニーズに応えるためには機能の幅が必要である">少なくとも基礎科目では、まず自力で読む・書く・考える力を確立してからAIを広く導入すべきである。</textarea><!-- デモ用プリセット: エージェントBの前提条件 -->
             </div>
             <div class="mb-0">
               <label class="form-label small fw-semibold">立場を支える具体的な事実・経験（任意）</label>
-              <textarea class="form-control border-danger agent-experience" rows="2" placeholder="例: ヘビーユーザーが機能の多さを理由に継続利用しているという事例を観察した">AI生成の要約に頼る学生が、持ち込み不可試験や口頭試問で十分に説明できず苦戦する様子を見てきた。</textarea><!-- DEMO_PRESET: Agent B experience -->
+              <textarea class="form-control border-danger agent-experience" rows="2" placeholder="例: ヘビーユーザーが機能の多さを理由に継続利用しているという事例を観察した">AI生成の要約に頼る学生が、持ち込み不可試験や口頭試問で十分に説明できず苦戦する様子を見てきた。</textarea><!-- デモ用プリセット: エージェントBの具体例・経験 -->
             </div>
           </div>
         </div>
@@ -285,8 +286,13 @@
 
     <!-- フェーズ4: 統合表明とまとめ -->
     <div class="mb-4">
-      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ4: 統合表明とまとめ</h2>
-      <div id="phase4Content"></div>
+      <!-- フェーズ4の見出しと結果本体を同じカード内にまとめて表示する -->
+      <div class="card debate-detail-card">
+        <div class="card-header">フェーズ4: 統合表明とまとめ</div>
+        <div class="card-body">
+          <div id="phase4Content"></div>
+        </div>
+      </div>
 
       <!-- 最終まとめ -->
       <div class="card border-success shadow-sm mt-4">
@@ -321,10 +327,10 @@
 
 <% block('script').append(`
 <script>
-  // debate2 detail navigation:
-  // - "詳細を確認" opens a clickable overview
-  // - clicking a phase opens the phase-only screen
-  // - next/prev/index buttons navigate between phases and back to the overview
+  // debate2 の詳細ナビゲーション:
+  // - 「詳細を確認」でクリック可能な目次画面を開く
+  // - 各フェーズをクリックすると、そのフェーズ専用画面を開く
+  // - 前へ / 目次へ / 次へ ボタンでフェーズ間と目次画面を移動する
   document.addEventListener('DOMContentLoaded', () => {
     const resultArea = document.getElementById('resultArea');
     const topicInput = document.getElementById('topic');
@@ -347,9 +353,12 @@
     detailRoot.id = 'debateDetailRoot';
     detailRoot.className = 'debate-detail-root d-none';
     detailRoot.innerHTML = \`
-      <div id="debateOverviewView">
+      <!-- 目次画面も詳細カード上に載せて、フェーズ画面と同じ見た目にそろえる -->
+      <div id="debateOverviewView" class="card debate-detail-card">
+        <div class="card-body">
         <h2 class="debate-overview-title">AIたちはこのように議論しています</h2>
         <div id="debateOverviewTrack" class="debate-overview-track"></div>
+        </div>
       </div>
       <div id="debatePhaseView" class="d-none">
         <div class="card debate-detail-card mb-4">
