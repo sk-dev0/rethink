@@ -67,4 +67,9 @@
     socket.on('redirectToDiscussion', (url) => {
         window.location.href = url;
     });
+
+    // 参加者離脱時の処理、内容を表示してもよいがここではコンソールに出すだけにした
+    socket.on('participantLeft', () => {
+        console.log('参加者が離脱しました');
+    });
 </script>

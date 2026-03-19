@@ -44,6 +44,7 @@
     // 接続が完了したらサーバにgeminiセッションの初期化を依頼
     // initDialogイベントはserver.jsに記載あり
     socket.on('connect', () => {
+        socket.emit('joinDialog', '<%= roomId %>')
         socket.emit('initDialog', '<%= roomId %>');
     });
 
@@ -129,4 +130,8 @@
         window.location.href = '/waiting/<%= roomId %><%= isHost ? "/host" : "" %>';
     })
      
+    // 参加者離脱時の処理、内容を表示してもよいがここではコンソールに出すだけにした
+    socket.on('participantLeft', () => {
+        console.log('参加者が離脱しました');
+    });
 </script>
