@@ -1,12 +1,7 @@
-﻿<% layout('layout/boilerplates') %>
+<% layout('layout/boilerplates') %>
 <% block('style').append('<link href="/css/debate.css" rel="stylesheet">') %>
 <% block('style').append(`
 <style>
-  :root {
-    --detail-border-color: #111;
-    --detail-border-width: 3px;
-  }
-
   .debate-detail-actions {
     display: flex;
     gap: 0.75rem;
@@ -161,7 +156,6 @@
 </style>
 `) %>
 
-<!-- ヘッダー -->
 <header class="bg-dark text-white py-4 mb-4 shadow">
   <div class="container">
     <h1 class="mb-0 fw-bold">
@@ -172,12 +166,8 @@
 </header>
 
 <div class="pb-5">
-
-  <!-- 入力フォームカード -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
-
-      <!-- 議題入力 -->
       <div class="mb-4">
         <label for="topic" class="form-label fw-semibold">議題・前提条件</label>
         <textarea
@@ -185,12 +175,10 @@
           class="form-control"
           rows="3"
           placeholder="例: 新しいプロダクトの UI 設計において、どちらのアプローチが優れているか"
-        >大学の講義に AI を導入するべきかどうか</textarea><!-- コメント: デモ用の初期議題 -->
+        ></textarea>
       </div>
 
-      <!-- エージェント入力 -->
       <div id="agentsContainer" class="row mb-3">
-        <!-- エージェントA -->
         <div class="col-md-6 mb-4 agent-col" data-index="0">
           <div class="border rounded p-3 agent-card" data-agent-index="0">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -198,24 +186,23 @@
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">主張</label>
-              <textarea class="form-control border-primary agent-claim" rows="2" placeholder="例: AI 導入は学習効率を高める">大学の講義には AI を活用すべきです。個別最適化された支援が可能になります。</textarea><!-- コメント: エージェントAの主張 -->
+              <textarea class="form-control border-primary agent-claim" rows="2" placeholder="例: シンプルで運用しやすいデザインを採用する"></textarea>
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">理由</label>
-              <textarea class="form-control border-primary agent-rationale" rows="2" placeholder="例: その主張を支える背景や根拠">理解度に応じた補助や質問対応ができ、学習体験の質を高められるためです。</textarea><!-- コメント: エージェントAの理由 -->
+              <textarea class="form-control border-primary agent-rationale" rows="2" placeholder="例: ユーザー調査ではシンプルな UI の定着率が高く、学習コストも低い"></textarea>
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">前提条件</label>
-              <textarea class="form-control border-primary agent-preconditions" rows="2" placeholder="例: 議論の前提となる条件や制約">教員の負担を増やさず、学生が主体的に使える設計であることを前提にします。</textarea><!-- コメント: エージェントAの前提条件 -->
+              <textarea class="form-control border-primary agent-preconditions" rows="2" placeholder="例: ターゲットユーザーは説明不要で直感的に使えることを重視する"></textarea>
             </div>
             <div class="mb-0">
               <label class="form-label small fw-semibold">立場を支える経験・知識</label>
-              <textarea class="form-control border-primary agent-experience" rows="2" placeholder="例: その立場に影響した経験や知見">教育現場での学習支援ツールの活用事例を参考にしています。</textarea><!-- コメント: エージェントAの経験・知識 -->
+              <textarea class="form-control border-primary agent-experience" rows="2" placeholder="例: 過去に担当したサービスで、複雑な UI よりもシンプルな設計が成果につながった"></textarea>
             </div>
           </div>
         </div>
 
-        <!-- エージェントB -->
         <div class="col-md-6 mb-4 agent-col" data-index="1">
           <div class="border rounded p-3 agent-card" data-agent-index="1">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -223,33 +210,31 @@
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">主張</label>
-              <textarea class="form-control border-danger agent-claim" rows="2" placeholder="例: AI 導入には慎重であるべき">大学の講義への AI 導入には慎重であるべきです。過度な依存が学習の本質を損なう可能性があります。</textarea><!-- コメント: エージェントBの主張 -->
+              <textarea class="form-control border-danger agent-claim" rows="2" placeholder="例: 情報量を増やしてパワーユーザー向けの設計を採用する"></textarea>
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">理由</label>
-              <textarea class="form-control border-danger agent-rationale" rows="2" placeholder="例: その主張を支える背景や根拠">思考の代替として AI を使うと、学生自身の考える力や対話力が弱まるおそれがあるためです。</textarea><!-- コメント: エージェントBの理由 -->
+              <textarea class="form-control border-danger agent-rationale" rows="2" placeholder="例: 上級ユーザーの 80% が一覧性と操作効率を重視している"></textarea>
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold">前提条件</label>
-              <textarea class="form-control border-danger agent-preconditions" rows="2" placeholder="例: 議論の前提となる条件や制約">評価制度や授業設計が AI 利用を前提に最適化されていない状況を想定します。</textarea><!-- コメント: エージェントBの前提条件 -->
+              <textarea class="form-control border-danger agent-preconditions" rows="2" placeholder="例: 上級ユーザーの継続利用が成功の鍵になる"></textarea>
             </div>
             <div class="mb-0">
               <label class="form-label small fw-semibold">立場を支える経験・知識</label>
-              <textarea class="form-control border-danger agent-experience" rows="2" placeholder="例: その立場に影響した経験や知見">授業支援ツールが意図せず学習の丸投げにつながった事例を参考にしています。</textarea><!-- コメント: エージェントBの経験・知識 -->
+              <textarea class="form-control border-danger agent-experience" rows="2" placeholder="例: ヘビーユーザー向け機能の強化で成果が出た事例を参考にしている"></textarea>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- エージェント追加ボタン -->
       <div class="mb-4">
         <button id="addAgentBtn" type="button" class="btn btn-outline-secondary">
           + エージェントを追加
         </button>
-        <span class="text-muted small ms-2">最大 2 人まで追加できます。</span>
+        <span class="text-muted small ms-2">最大 6 人まで追加できます。</span>
       </div>
 
-      <!-- フェーズ3のターン数 -->
       <div class="mb-4">
         <label for="maxTurns" class="form-label fw-semibold">フェーズ3の議論ターン数</label>
         <div class="d-flex align-items-center gap-3">
@@ -266,18 +251,14 @@
         </div>
       </div>
 
-      <!-- 議論開始ボタン -->
       <div class="d-grid d-md-flex">
         <button id="startBtn" class="btn btn-dark btn-lg px-5">
           議論開始
         </button>
       </div>
-
     </div>
   </div>
 
-  <!-- 結果表示エリア -->
-  <!-- 結果表示後に最優先で見せる最終総括レポート -->
   <section id="summaryReportSection" class="d-none mb-4">
     <div class="card border-success shadow-sm">
       <div class="card-header bg-success text-white fw-semibold">
@@ -289,7 +270,6 @@
     </div>
   </section>
 
-  <!-- 結果表示後に見せるカード型目次 -->
   <section id="debateIndexSection" class="debate-index-section d-none">
     <div class="debate-index-shell">
       <div class="card-body p-4 p-lg-5">
@@ -363,8 +343,6 @@
   </section>
 
   <div id="resultArea" class="d-none">
-
-    <!-- フェーズ1: 意見表明 -->
     <div class="mb-4 debate-phase-section" data-phase-index="0">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ1: 意見表明</h2>
       <div class="accordion" id="phase1Accordion">
@@ -372,7 +350,6 @@
       </div>
     </div>
 
-    <!-- フェーズ2: 反論・情報取得 -->
     <div class="mb-4 debate-phase-section" data-phase-index="1">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ2: 反論・情報取得</h2>
       <div class="accordion" id="phase2Accordion">
@@ -380,7 +357,6 @@
       </div>
     </div>
 
-    <!-- フェーズ3: サブ議題議論 -->
     <div class="mb-4 debate-phase-section" data-phase-index="2">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ3: サブ議題議論</h2>
       <div class="accordion" id="phase3Accordion">
@@ -389,25 +365,15 @@
     </div>
 
     <div class="mb-4 debate-phase-section" data-phase-index="3">
-      <div class="card">
-        <div class="card-header">フェーズ4: 統合表明とまとめ</div>
-        <div class="card-body">
-          <div id="phase4Content"></div>
-        </div>
-      </div>
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ4: 統合表明とまとめ</h2>
+      <div id="phase4Content"></div>
     </div>
-
   </div>
-
 </div>
 
 <% block('script').append('<script src="/js/main.js"></script>') %>
 <% block('script').append(`
 <script>
-  // debate2 の結果UI:
-  // - 結果表示直後は最終総括レポートと目次だけを表示
-  // - resultArea 内の元フェーズセクションを show / hide で切り替える
-  // - 結果DOMは複製しない
   document.addEventListener('DOMContentLoaded', () => {
     const resultArea = document.getElementById('resultArea');
     const summarySection = document.getElementById('summaryReportSection');
@@ -480,7 +446,6 @@
       indexSection.classList.add('d-none');
       topNav.classList.remove('d-none');
       bottomNav.classList.remove('d-none');
-
       targetSection.classList.remove('d-none');
 
       [topNav, bottomNav].forEach((nav) => {

@@ -107,6 +107,11 @@ app.get('/debate2', (req, res) => {
     res.render('debate2');
 });
 
+// debate3.ejs をブラウザで直接確認するための表示ルート
+app.get('/debate3', (req, res) => {
+    res.render('debate3');
+});
+
 // AI Debate API
 const debateRoutes = require('./routes/debate');
 app.use('/api/debate', debateRoutes);
