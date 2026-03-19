@@ -13,6 +13,18 @@ const SEMANTIC_BRANCH_THRESHOLD = 0.7;
 // フェーズ3の攻撃モードの順番（α→β を繰り返す2種類）
 const PHASE3_ATTACK_MODES = ['α', 'β'];
 
+// 攻撃モードγ
+const ATTACK_MODE_GAMMA = 'γ';
+
+// 前提の検証可能性スコアの合否閾値
+const ASSUMPTION_VERIFIABILITY_THRESHOLD = 0.7;
+
+// 前提の反証成立度スコアの合否閾値
+const ASSUMPTION_INVALIDATION_THRESHOLD = 0.7;
+
+// エビデンスの信頼性スコアを有効とみなす最低ライン
+const EVIDENCE_CREDIBILITY_THRESHOLD = 3.0;
+
 module.exports = {
     PHASE1_MAX_CHARS,
     PHASE2_3_MAX_CHARS,
@@ -21,4 +33,8 @@ module.exports = {
     SUB_TOPIC_MAX,
     SEMANTIC_BRANCH_THRESHOLD,
     PHASE3_ATTACK_MODES,
+    ATTACK_MODE_GAMMA,
+    ASSUMPTION_VERIFIABILITY_THRESHOLD,
+    ASSUMPTION_INVALIDATION_THRESHOLD,
+    EVIDENCE_CREDIBILITY_THRESHOLD,
 };
