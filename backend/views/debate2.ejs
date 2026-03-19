@@ -124,6 +124,126 @@
     flex-wrap: wrap;
   }
 
+  /* トップ画面の議論プロセス紹介: フォーム下に置くカード型セクション */
+  .debate-process-section {
+    margin-bottom: 2rem;
+  }
+
+  .debate-process-card {
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.75rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    background: #fff;
+  }
+
+  .debate-process-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .debate-process-kicker {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(31, 105, 136, 0.1);
+    color: #1f6988;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+
+  .debate-process-title {
+    margin: 0 0 0.55rem;
+    font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .debate-process-text {
+    margin: 0;
+    max-width: 680px;
+    color: #5f6b76;
+    line-height: 1.7;
+  }
+
+  .debate-process-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .debate-process-item {
+    min-width: 0;
+    padding: 1.25rem;
+    border: 1px solid rgba(17, 17, 17, 0.12);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #fff 0%, #f8fbfc 100%);
+    box-shadow: 0 10px 24px rgba(15, 50, 66, 0.06);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .debate-process-item:hover {
+    transform: translateY(-4px);
+    border-color: rgba(31, 105, 136, 0.4);
+    box-shadow: 0 18px 36px rgba(15, 50, 66, 0.1);
+  }
+
+  .debate-process-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .debate-process-icon {
+    width: 3rem;
+    height: 3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.9rem;
+    background: rgba(31, 105, 136, 0.12);
+    color: #1f6988;
+    flex: 0 0 auto;
+  }
+
+  .debate-process-icon svg {
+    width: 1.45rem;
+    height: 1.45rem;
+  }
+
+  .debate-process-phase {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #7b8791;
+  }
+
+  .debate-process-item-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #111;
+  }
+
+  .debate-process-item-text {
+    margin: 0;
+    color: #5f6b76;
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
   @media (max-width: 991px) {
     .debate-overview-track {
       flex-direction: column;
@@ -137,6 +257,16 @@
     .debate-phase-box {
       width: min(100%, 320px);
       min-height: 240px;
+    }
+
+    .debate-process-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 575px) {
+    .debate-process-grid {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>
@@ -258,6 +388,79 @@
   </div>
 
   <!-- 結果表示エリア（初期非表示） -->
+  <!-- トップ画面の空き領域に、議論プロセスをカード型UIで案内する -->
+  <section class="debate-process-section">
+    <div class="debate-process-card">
+      <div class="card-body p-4 p-lg-5">
+        <div class="debate-process-header">
+          <div>
+            <span class="debate-process-kicker">How it works</span>
+            <h2 class="debate-process-title">議論プロセス</h2>
+            <p class="debate-process-text">4つのフェーズを通して、AIが主張を整理し、反論を深め、最終的な結論まで導きます。</p>
+          </div>
+        </div>
+
+        <div class="debate-process-grid">
+          <article class="debate-process-item">
+            <div class="debate-process-top">
+              <span class="debate-process-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v5A2.5 2.5 0 0 1 16.5 15H11l-3.8 3v-3H7.5A2.5 2.5 0 0 1 5 12.5v-5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M8.5 9.5h7M8.5 12h4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="debate-process-phase">Phase 1</span>
+            </div>
+            <h3 class="debate-process-item-title">意見表明</h3>
+            <p class="debate-process-item-text">初期主張を整理し、議論の出発点を作る。</p>
+          </article>
+
+          <article class="debate-process-item">
+            <div class="debate-process-top">
+              <span class="debate-process-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle cx="10.5" cy="10.5" r="4.5" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="m14 14 4.5 4.5M8.5 10.5h4M10.5 8.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="debate-process-phase">Phase 2</span>
+            </div>
+            <h3 class="debate-process-item-title">反論・情報取得</h3>
+            <p class="debate-process-item-text">相手の論点を分析し、反論を構築する。</p>
+          </article>
+
+          <article class="debate-process-item">
+            <div class="debate-process-top">
+              <span class="debate-process-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M8 6H5.5A2.5 2.5 0 0 0 3 8.5v4A2.5 2.5 0 0 0 5.5 15H6v3l3.8-3H12.5A2.5 2.5 0 0 0 15 12.5v-1" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M16 6h2.5A2.5 2.5 0 0 1 21 8.5v4A2.5 2.5 0 0 1 18.5 15H18v3l-3.8-3H11.5A2.5 2.5 0 0 1 9 12.5v-4A2.5 2.5 0 0 1 11.5 6H14" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="debate-process-phase">Phase 3</span>
+            </div>
+            <h3 class="debate-process-item-title">サブ議題議論</h3>
+            <p class="debate-process-item-text">重要な論点を深掘りして議論する。</p>
+          </article>
+
+          <article class="debate-process-item">
+            <div class="debate-process-top">
+              <span class="debate-process-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 4v4M12 16v4M6.5 7.5 9 10M15 14l2.5 2.5M4 12h4M16 12h4M6.5 16.5 9 14M15 10l2.5-2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.8"/>
+                </svg>
+              </span>
+              <span class="debate-process-phase">Phase 4</span>
+            </div>
+            <h3 class="debate-process-item-title">統合・結論</h3>
+            <p class="debate-process-item-text">議論をまとめて最終的な結論を導く。</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div id="resultArea" class="d-none">
 
     <!-- フェーズ1: 意見表明 -->
@@ -481,12 +684,8 @@
     };
 
     const renderOverview = () => {
-      hideSourceSections();
-      phase4Section.classList.add('d-none');
-      detailRoot.classList.remove('d-none');
-      overviewView.classList.remove('d-none');
-      phaseView.classList.add('d-none');
-      setActiveOverviewPhase(-1);
+      /* 目次画面は一旦使わず、先頭フェーズの詳細を直接表示する */
+      openPhase(0);
     };
 
     const openPhase = (phaseIndex) => {
@@ -500,6 +699,8 @@
       topicText.textContent = topicInput?.value?.trim() || '議題が未入力です。';
       phaseCardTitle.textContent = phases[phaseIndex].title;
       phaseCardBody.innerHTML = clonePhaseBody(phaseIndex);
+      /* 目次画面を使わない間は「目次へ」ボタンを非表示にする */
+      indexBtn.classList.add('d-none');
       prevBtn.classList.toggle('d-none', phaseIndex === 0);
       nextBtn.classList.toggle('d-none', phaseIndex === phases.length - 1);
       setActiveOverviewPhase(phaseIndex);
