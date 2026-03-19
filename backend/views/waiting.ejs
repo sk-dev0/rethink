@@ -59,7 +59,10 @@
         document.getElementById('count').textContent = count + '/' + total;
         if (count >= total && total > 0) {
             const startBtn = document.getElementById('startBtn');
-            if (startBtn) startBtn.disabled = false;
+            if (startBtn) {
+                startBtn.disabled = false;
+                alert('全員の対話が完了しました！議論を開始できます。'); 
+            }
         }
     });
 

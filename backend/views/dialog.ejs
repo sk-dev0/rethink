@@ -93,41 +93,70 @@
         const message = input.value.trim();
         if (!message) return;
 
+        document.getElementById('sendBtn').disabled = true;
+        document.getElementById('messageInput').disabled = true;
+
         addMessage(message, 'user');
         // userの入力を会話履歴に追加
         history.push({ role: 'user', text: message });
         input.value = '';
 
-        const response = await fetch('/dialog/message', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ socketId: socket.id, message })
-        });
+        try {
+            const response = await fetch('/dialog/message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ socketId: socket.id, message })
+            });
 
-        const data = await response.json();
-        addMessage(data.reply, 'ai');
-        // aiの返答を会話履歴に追加
-        history.push({ role: 'ai', text: data.reply });
+            const data = await response.json();
+            addMessage(data.reply, 'ai');
+            // aiの返答を会話履歴に追加
+            history.push({ role: 'ai', text: data.reply });
+
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('messageInput').disabled = false; 
+        } catch (err) {
+            addMessage('エラーが発生しました。もう一度送信してください。', 'ai');
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('messageInput').disabled = false;
+        }
+        
 
         // 終了条件 (いまここではgeminiが判断して、「インタビューを終了します」という文字が含まれた時)
-        if (data.reply.includes('インタビューを終了します')) {
+        if (data.reply.includes('インタビューを終了')) {
             document.getElementById('sendBtn').disabled = true;
             document.getElementById('endBtn').disabled = false;
             document.getElementById('endAlert').style.display = 'block';
         }
     });
 
+    // エンターキーで送信を可能にする
+    document.getElementById('messageInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('sendBtn').click();
+        }
+    });
+
     // 対話終了ボタンが押されたときの処理
     document.getElementById('endBtn').addEventListener('click', async () => {
-        const response = await fetch('/dialog/profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ socketId: socket.id, history, roomId })
-        });
+        endBtn.disabled = true; 
+        endBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>処理中...'; 
 
-        const data = await response.json();
-        // 待機画面に遷移
-        window.location.href = '/waiting/<%= roomId %><%= isHost ? "/host" : "" %>';
+        try {
+            const response = await fetch('/dialog/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ socketId: socket.id, history, roomId })
+            });
+
+            const data = await response.json();
+            // 待機画面に遷移
+            window.location.href = '/waiting/<%= roomId %><%= isHost ? "/host" : "" %>';
+        } catch (err) {
+            endBtn.disabled = false;
+            endBtn.innerHTML = '対話を終了する';
+            alert('エラーが発生しました。もう一度試してください。');
+        }
     })
      
     // 参加者離脱時の処理、内容を表示してもよいがここではコンソールに出すだけにした

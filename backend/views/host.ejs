@@ -16,6 +16,15 @@
         </div>
     </div>
 
+    <div class="card shadow mb-4 border-success">
+        <div class="card-body p-4">
+            <h5 class="card-title text-success"><i class="bi bi-people me-2"></i>参加者招待URL</h5>
+            <p class="card-text text-muted small">このURLを参加者に共有してください</p>
+            <input type="text" class="form-control mb-2" id="guestUrl" value="http://localhost:3000/room/<%= roomId %>" readonly>
+            <button class="btn btn-success w-100" onclick="copyUrl('guestUrl')"><i class="bi bi-clipboard me-1"></i>URLをコピー</button>
+        </div>
+    </div>
+
     <div class="card shadow-sm mb-4 border-primary">
         <div class="card-body p-4">
             <h5 class="card-title text-primary"><i class="bi bi-people me-2"></i>参加状況</h5>
@@ -61,6 +70,16 @@
 
     document.getElementById('startBtn').addEventListener('click', () => {
         const topic = document.getElementById('topicInput').value.trim();
+        if (!topic) {
+            alert('議題を入力してください');
+            return;
+        }
+        const countText = document.getElementById('count').textContent;
+        const current = parseInt(countText.split('/')[0]);
+        if (current < 2) {
+            alert('参加者が2人以上必要です');
+            return;
+        }
         socket.emit('start', roomId, topic);
     });
 </script>

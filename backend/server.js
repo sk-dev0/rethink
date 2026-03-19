@@ -25,6 +25,8 @@ const roomMaxParticipants = {};
 const socketRooms = {}; 
 // 完了済を検知する
 const completedSockets = new Set(); 
+// 複数ホストを防止するためのオブジェクト
+const roomHosted = {};
 
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
@@ -45,6 +47,10 @@ app.get('/', (req, res) => {
 
 app.get('/room/:roomId/host', (req, res) => {
     const roomId = req.params.roomId;
+    if (roomHosted[roomId]) {
+        return res.redirect('/room/' + roomId);
+    }
+    roomHosted[roomId] = true;
     const max = parseInt(req.query.max) || 4;
     roomMaxParticipants[roomId] = max;
     res.render('host', { roomId });
@@ -85,6 +91,9 @@ app.post('/dialog/profile', async (req, res) => {
 
 app.get('/waiting/:roomId/host', (req, res) => {
     const roomId = req.params.roomId;
+    if (!roomHosted[roomId]) {
+        return res.redirect('/waiting/' + roomId);
+    }
     res.render('waiting', { roomId, isHost: true });
 });
 
@@ -155,7 +164,16 @@ const debateRoutes = require('./routes/debate');
 app.use('/api/debate', debateRoutes);
 
 app.use((req, res) => {
-    res.send('404ページ');
+    res.status(404).send(`
+        <div style="font-family: sans-serif; text-align: center; margin-top: 100px;">
+            <div style="display: inline-block; padding: 40px 60px; border: 2px solid #dee2e6; border-radius: 12px;">
+                <h1 style="font-size: 72px; margin: 0;">404</h1>
+                <h2>ページが見つかりません</h2>
+                <p style="color: gray;">正しいURLでやり直してください。</p>
+                <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 24px; background: #0d6efd; color: white; border-radius: 8px; text-decoration: none;">トップに戻る</a>
+            </div>
+        </div>
+    `);
 });
 
 io.on('connection', (socket) => {
