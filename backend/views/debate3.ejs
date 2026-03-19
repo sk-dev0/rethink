@@ -148,6 +148,31 @@
     line-height: 1.7;
   }
 
+  .debate-step-guide {
+    margin-bottom: 1rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(17, 17, 17, 0.1);
+    border-radius: 0.75rem;
+    background: #f8fbfc;
+  }
+
+  .debate-step-guide-title {
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1f6988;
+  }
+
+  .debate-step-guide-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: #5f6b76;
+  }
+
+  .debate-step-guide-list li + li {
+    margin-top: 0.45rem;
+  }
+
   @media (max-width: 991px) {
     .debate-index-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -361,6 +386,27 @@
     <div class="mb-4 debate-phase-section" data-phase-index="1">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ2: 反論・情報取得</h2>
       <p class="debate-phase-description">相手の論点を分析し、根拠と反論の材料を集めます。</p>
+      <div class="debate-step-guide">
+        <!-- コメント: フェーズ2の各ステップ説明を結果画面内に表示 -->
+        <div class="debate-step-guide-title">このフェーズで行うこと</div>
+        <ol class="debate-step-guide-list">
+          <li>Step1: 情報取得結果
+            各エージェントが議論に必要な情報や根拠を集めます。
+          </li>
+          <li>Step2: 情報信頼性検証
+            集めた情報の信頼性や偏りを中立視点で確認します。
+          </li>
+          <li>Step3: 全対全反論
+            それぞれの立場から相手の主張に対する反論を組み立てます。
+          </li>
+          <li>Step4: サブ議題一覧
+            ここから深掘りすべき論点を抽出して整理します。
+          </li>
+          <li>Step5: 要素分解
+            論点を構成する主張、根拠、価値前提に分けて見直します。
+          </li>
+        </ol>
+      </div>
       <div class="accordion" id="phase2Accordion">
         <div id="phase2Content"></div>
       </div>
