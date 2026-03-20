@@ -326,48 +326,58 @@ const renderPhase4 = (phase4) => {
 
 /* =============================
    描画: マインドマップ
+   方式: SVG サイズ直接制御 + container overflow:auto（OS標準スクロールバー）
+   ズーム: Ctrl+スクロール（マウス位置中心）
+   縮小限: 横スクロールが消えるまで（SVG幅 ≤ コンテナ幅）
+   拡大限: デフォルトスケールの2倍
 ============================= */
 
-const renderMindmap = async (diagramCode) => {
-    const container = document.getElementById('mindmapContent');
-    const card = container.closest('.card');
-    const dlBtn = document.getElementById('downloadMindmapBtn');
-    if (!diagramCode) {
-        card.classList.add('d-none');
-        dlBtn.classList.add('d-none');
-        return;
-    }
-    container.innerHTML = '';
-    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
-    const id = 'mindmap_' + Date.now();
-    const { svg } = await mermaid.render(id, diagramCode);
-    container.innerHTML = svg;
-    const svgEl = container.querySelector('svg');
-    if (svgEl) svgEl.style.width = '100%';
-    dlBtn.classList.remove('d-none');
-};
+/**
+ * containerId → { naturalW, naturalH, defaultScale, currentScale,
+ *                 minScale, maxScale, applyScale, wheelHandler }
+ */
+const mindmapState = {};
 
-const downloadMindmap = () => {
-    const svgEl = document.querySelector('#mindmapContent svg');
-    if (!svgEl) return;
-
-    // viewBox から実寸を取得（なければ getBoundingClientRect にフォールバック）
-    let width, height;
+/**
+ * SVG の viewBox から自然サイズを取得
+ * viewBox がなければ width/height 属性、それもなければフォールバック値を返す
+ */
+const getSvgNaturalSize = (svgEl) => {
     const vb = svgEl.getAttribute('viewBox');
     if (vb) {
-        const parts = vb.trim().split(/[\s,]+/);
-        width = parseFloat(parts[2]);
-        height = parseFloat(parts[3]);
+        const p = vb.trim().split(/[\s,]+/);
+        const w = parseFloat(p[2]);
+        const h = parseFloat(p[3]);
+        if (w > 0 && h > 0) return { w, h };
     }
-    if (!width || !height) {
-        const rect = svgEl.getBoundingClientRect();
-        width = rect.width || 1200;
-        height = rect.height || 800;
-    }
+    return {
+        w: parseFloat(svgEl.getAttribute('width'))  || 1200,
+        h: parseFloat(svgEl.getAttribute('height')) || 800,
+    };
+};
 
-    // SVG を複製して白背景・固定サイズを付与
+/**
+ * SVG を指定スケールで描画するユーティリティ
+ * @param {SVGElement} svgEl
+ * @param {number}     naturalW
+ * @param {number}     naturalH
+ * @param {number}     scale
+ */
+const applySvgScale = (svgEl, naturalW, naturalH, scale) => {
+    svgEl.setAttribute('width',  Math.round(naturalW * scale));
+    svgEl.setAttribute('height', Math.round(naturalH * scale));
+};
+
+/**
+ * SVG データを PNG（2倍解像度）または SVG でダウンロードするユーティリティ
+ * @param {SVGElement} svgEl
+ * @param {number}     width    - エクスポート幅（px）
+ * @param {number}     height   - エクスポート高さ（px）
+ * @param {string}     filename - 拡張子なしファイル名
+ */
+const exportSvgAsPng = (svgEl, width, height, filename) => {
     const clone = svgEl.cloneNode(true);
-    clone.setAttribute('width', width);
+    clone.setAttribute('width',  width);
     clone.setAttribute('height', height);
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     bg.setAttribute('width', '100%');
@@ -376,54 +386,154 @@ const downloadMindmap = () => {
     clone.insertBefore(bg, clone.firstChild);
 
     const svgData = new XMLSerializer().serializeToString(clone);
+    const bytes   = new TextEncoder().encode(svgData);
+    const binary  = bytes.reduce((acc, b) => acc + String.fromCharCode(b), '');
+    const imgSrc  = 'data:image/svg+xml;base64,' + btoa(binary);
 
-    // data: URL 方式（blob URL より Canvas との互換性が高い）
-    const bytes = new TextEncoder().encode(svgData);
-    const binary = bytes.reduce((acc, b) => acc + String.fromCharCode(b), '');
-    const base64 = btoa(binary);
-    const imgSrc = 'data:image/svg+xml;base64,' + base64;
-
-    // 2倍解像度で Canvas に描画して PNG ダウンロード
-    const scale = 2;
+    const scale  = 2;
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(width * scale);
+    canvas.width  = Math.round(width  * scale);
     canvas.height = Math.round(height * scale);
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.scale(scale, scale);
 
-    const img = new Image();
-    img.onload = () => {
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                // PNG 変換失敗時は SVG を直接ダウンロード
-                const svgBlobFallback = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(svgBlobFallback);
-                a.download = 'mindmap.svg';
-                a.click();
-                URL.revokeObjectURL(a.href);
-                return;
-            }
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'mindmap.png';
-            a.click();
-            URL.revokeObjectURL(a.href);
-        }, 'image/png');
-    };
-    img.onerror = () => {
-        // PNG 変換失敗時は SVG を直接ダウンロード
-        const svgBlobFallback = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const downloadBlob = (blob) => {
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(svgBlobFallback);
-        a.download = 'mindmap.svg';
+        a.href     = URL.createObjectURL(blob);
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(a.href);
     };
+    const fallbackSvg = () => {
+        downloadBlob(new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' }));
+    };
+
+    const img = new Image();
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(blob => blob ? downloadBlob(blob) : fallbackSvg(), 'image/png');
+    };
+    img.onerror = fallbackSvg;
     img.src = imgSrc;
+};
+
+/**
+ * マインドマップを指定コンテナに描画する汎用関数
+ * @param {string} containerId  - マインドマップ表示先 div の id
+ * @param {string} dlBtnId      - ダウンロードボタンの id
+ * @param {string} diagramCode  - mermaid コード
+ */
+const renderMindmap = async (containerId, dlBtnId, diagramCode) => {
+    const container = document.getElementById(containerId);
+    const card  = container.closest('.card');
+    const dlBtn = document.getElementById(dlBtnId);
+
+    if (!diagramCode) {
+        card.classList.add('d-none');
+        dlBtn.classList.add('d-none');
+        return;
+    }
+
+    // 既存状態のクリーンアップ
+    const prev = mindmapState[containerId];
+    if (prev) {
+        container.removeEventListener('wheel', prev.wheelHandler);
+        delete mindmapState[containerId];
+    }
+    container.innerHTML = '';
+
+    // Mermaid レンダリング
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+    let svg;
+    try {
+        ({ svg } = await mermaid.render('mm_' + containerId + '_' + Date.now(), diagramCode));
+    } catch (err) {
+        console.error('[Mermaid render error]', err, '\n--- diagramCode ---\n', diagramCode);
+        container.innerHTML = `<p class="text-danger p-3">マインドマップの描画に失敗しました。コンソールを確認してください。</p>`;
+        return;
+    }
+
+    container.innerHTML = svg;
+    const svgEl = container.querySelector('svg');
+    if (!svgEl) { dlBtn.classList.remove('d-none'); return; }
+
+    svgEl.style.maxWidth = 'none';
+    svgEl.style.display  = 'block';
+
+    const { w: naturalW, h: naturalH } = getSvgNaturalSize(svgEl);
+    const containerH = container.clientHeight || 600;
+    const containerW = container.clientWidth  || 800;
+
+    // スケール計算
+    // ・defaultScale: 高さがコンテナ縦幅にぴったり収まる（縦スクロールなし）
+    // ・minScale    : 幅がコンテナ横幅に収まる（横スクロールなし）
+    // ・maxScale    : default の 2 倍
+    const defaultScale = containerH / naturalH;
+    const minScale     = containerW / naturalW;
+    const maxScale     = defaultScale * 2;
+
+    let currentScale = defaultScale;
+
+    const applyScale = (scale) => {
+        currentScale = Math.max(minScale, Math.min(maxScale, scale));
+        applySvgScale(svgEl, naturalW, naturalH, currentScale);
+    };
+
+    applyScale(defaultScale);
+
+    // Ctrl+スクロール: マウス位置を中心にズーム
+    const wheelHandler = (e) => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+        e.preventDefault();
+
+        const oldScale = currentScale;
+        const factor   = e.deltaY > 0 ? 1 / 1.1 : 1.1;
+        const newScale = Math.max(minScale, Math.min(maxScale, oldScale * factor));
+        if (newScale === oldScale) return;
+
+        // マウス位置（コンテナ内座標）を求め、ズーム後も同じ点を維持
+        const rect   = container.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left + container.scrollLeft;
+        const mouseY = e.clientY - rect.top  + container.scrollTop;
+
+        currentScale = newScale;
+        applySvgScale(svgEl, naturalW, naturalH, newScale);
+
+        const ratio = newScale / oldScale;
+        container.scrollLeft = mouseX * ratio - (e.clientX - rect.left);
+        container.scrollTop  = mouseY * ratio - (e.clientY - rect.top);
+    };
+
+    container.addEventListener('wheel', wheelHandler, { passive: false });
+
+    mindmapState[containerId] = {
+        naturalW, naturalH,
+        defaultScale, minScale, maxScale,
+        getScale:   () => currentScale,
+        applyScale,
+        wheelHandler,
+    };
+
+    dlBtn.classList.remove('d-none');
+};
+
+/**
+ * 指定コンテナのマインドマップを PNG でダウンロードする汎用関数
+ * ダウンロード時は自然サイズ（2倍解像度）で出力
+ * @param {string} containerId - マインドマップ表示先 div の id
+ * @param {string} filename    - ダウンロードファイル名（拡張子なし）
+ */
+const downloadMindmap = (containerId, filename) => {
+    const svgEl = document.querySelector(`#${containerId} svg`);
+    if (!svgEl) return;
+
+    const state = mindmapState[containerId];
+    const { w, h } = getSvgNaturalSize(svgEl);
+
+    // ダウンロードは自然サイズ（全体が見える）で出力
+    exportSvgAsPng(svgEl, w, h, `${filename}.png`);
 };
 
 /* =============================
@@ -471,10 +581,13 @@ const startDebate = async () => {
         renderPhase2(data.phase2);
         renderPhase3(data.phase3);
         renderPhase4(data.phase4);
-        await renderMindmap(data.mindmap);
 
+        // resultArea を先に表示してからマインドマップを描画
+        // （コンテナに実寸が付いた状態で mermaid を初期化するため）
         document.getElementById('resultArea').classList.remove('d-none');
         document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+        await renderMindmap('mindmapContent', 'downloadMindmapBtn', data.mindmap1);
+        await renderMindmap('mindmapContent2', 'downloadMindmap2Btn', data.mindmap2);
     } catch (err) {
         alert('エラーが発生しました: ' + err.message);
         console.error(err);
@@ -491,5 +604,10 @@ const startDebate = async () => {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('startBtn').addEventListener('click', startDebate);
     document.getElementById('addAgentBtn').addEventListener('click', addAgentCard);
-    document.getElementById('downloadMindmapBtn').addEventListener('click', downloadMindmap);
+    document.getElementById('downloadMindmapBtn').addEventListener('click', () =>
+        downloadMindmap('mindmapContent', 'mindmap1')
+    );
+    document.getElementById('downloadMindmap2Btn').addEventListener('click', () =>
+        downloadMindmap('mindmapContent2', 'mindmap2')
+    );
 });

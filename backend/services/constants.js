@@ -3,6 +3,11 @@ const PHASE1_MAX_CHARS = 600;       // フェーズ1: 立場表明
 const PHASE2_3_MAX_CHARS = 500;     // フェーズ2/3: 反論ターン
 const PHASE4_MAX_CHARS = 650;       // フェーズ4: 統合表明
 
+// マインドマップノードラベルの文字数上限
+const MINDMAP_LABEL_MAX_CHARS = 20;       // 通常ラベル（議題・主張・反論）
+const MINDMAP_SUBTOPIC_MAX_CHARS = 30;    // サブ議題要約
+const MINDMAP_INTEGRATION_MAX_CHARS = 30; // 統合表明派生ノード
+
 // リスト管理
 const TOPIC_LIST_MAX = 30;          // 議論済み論点リストの最大保持件数
 const SUB_TOPIC_MAX = 5;            // サブ議題の上限件数
@@ -17,6 +22,9 @@ module.exports = {
     PHASE1_MAX_CHARS,
     PHASE2_3_MAX_CHARS,
     PHASE4_MAX_CHARS,
+    MINDMAP_LABEL_MAX_CHARS,
+    MINDMAP_SUBTOPIC_MAX_CHARS,
+    MINDMAP_INTEGRATION_MAX_CHARS,
     TOPIC_LIST_MAX,
     SUB_TOPIC_MAX,
     SEMANTIC_BRANCH_THRESHOLD,

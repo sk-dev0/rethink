@@ -23,7 +23,8 @@ const {
     addTopicsToList,
     topicsToString,
 } = require('./topicTracker');
-const { runFinalSummary, buildMindmapCode } = require('./resultService');
+const { runFinalSummary } = require('./resultService');
+const { buildMindmapCode } = require('./mindmapService');
 const {
     SUB_TOPIC_MAX,
     PHASE3_ATTACK_MODES,
@@ -251,11 +252,12 @@ const runDebate = async (topic, agents, maxTurns) => {
         phase3: phase3Results,
         phase4: phase4Result,
     };
-    const mindmap = await buildMindmapCode(topic, agents, partialResult);
+    const { mindmap1, mindmap2 } = await buildMindmapCode(topic, agents, partialResult);
 
     return {
         ...partialResult,
-        mindmap,
+        mindmap1,
+        mindmap2,
     };
 };
 
