@@ -1,4 +1,4 @@
-/**
+﻿/**
  * main.js
  * AI Debate フロントエンド処理
  * - 入力収集 → POST送信 → JSON描画
@@ -224,7 +224,7 @@ const renderPhase2 = (phase2) => {
 <p class="mb-1"><strong>価値前提:</strong></p><ul>${values}</ul>`;
     }).join('<hr>');
     container.insertAdjacentHTML('beforeend',
-        createAccordionItem('phase2Accordion', 'p2_decomp', 'Step4: 要素分解', decompositionHtml)
+        createAccordionItem('phase2Accordion', 'p2_decomp', 'Step5: 要素分解', decompositionHtml)
     );
 };
 
@@ -252,7 +252,9 @@ const renderPhase3 = (phase3) => {
                         ${preText(u.text)}
                     </div>`
                 ).join('');
-                const turnTitle = `ターン${esc(String(entry.turn))} (攻撃モード: ${esc(entry.attackMode || '-')})`;
+                const turnTitle = entry.subStep
+                    ? `ターン${esc(String(entry.turn))}-${esc(entry.subStep)}`
+                    : `ターン${esc(String(entry.turn))} (攻撃モード: ${esc(entry.attackMode || '-')})`;
                 return createAccordionItem(
                     innerAccId,
                     `p3_${i}_t${ti}`,
@@ -322,6 +324,49 @@ const renderPhase4 = (phase4) => {
 
     // 最終総括
     document.getElementById('summaryContent').textContent = cleanSummary(phase4.finalSummary || '');
+};
+
+/* =============================
+   描画: 前提検証トラック
+============================= */
+
+const renderAssumptionDebateLog = (assumptionDebateLog) => {
+    const section = document.getElementById('assumptionTrackSection');
+    const container = document.getElementById('assumptionTrackContent');
+    if (!section || !container) return;
+
+    if (!assumptionDebateLog || assumptionDebateLog.length === 0) {
+        section.classList.add('d-none');
+        return;
+    }
+
+    section.classList.remove('d-none');
+    container.innerHTML = '';
+
+    const accId = 'assumptionTrackAccordion';
+    assumptionDebateLog.forEach((entry, i) => {
+        const itemId = `at_${i}`;
+        const titleShort = entry.content ? entry.content.slice(0, 20) : '';
+        const accordionTitle = `${esc(entry.id || String(i))}: ${esc(titleShort)}`;
+        const invalidatedLabel = (entry.invalidationScore || 0) >= 0.7 ? '反証成立' : '反証未成立';
+
+        const utterancesHtml = (entry.gammaUtterances || []).map(u =>
+            `<div class="mb-2">
+                <span class="badge bg-dark me-1">${esc(u.label)}</span>
+                ${preText(u.text)}
+            </div>`
+        ).join('');
+
+        const bodyHtml = `
+<p class="mb-1"><strong>反証スコア:</strong> ${esc(String(entry.invalidationScore || 0))}</p>
+<p class="mb-2"><strong>判定:</strong> ${esc(invalidatedLabel)}</p>
+<h6 class="fw-semibold mt-3">γ攻撃発言</h6>
+${utterancesHtml}`;
+
+        container.insertAdjacentHTML('beforeend',
+            createAccordionItem(accId, itemId, accordionTitle, bodyHtml, i === 0)
+        );
+    });
 };
 
 /* =============================
