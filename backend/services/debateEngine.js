@@ -9,11 +9,15 @@ const {
     buildPhase2Step1Prompt,
     buildPhase2Step3Prompt,
     buildPhase3Prompt,
+    buildPhase3GammaPrompt,
     buildPhase4Turn1Prompt,
     buildPhase4Turn2Prompt,
 } = require('./promptBuilders');
 const {
     runCredibilityCheck,
+    runCredibilityCheckStructured,
+    checkAssumptionVerifiability,
+    checkAssumptionInvalidation,
     runSubTopicExtraction,
     checkSemanticBranch,
     extractSubSubTopics,
@@ -26,8 +30,10 @@ const {
 const { runFinalSummary } = require('./resultService');
 const {
     SUB_TOPIC_MAX,
-    PHASE3_ATTACK_MODES,
     SEMANTIC_BRANCH_THRESHOLD,
+    ASSUMPTION_VERIFIABILITY_THRESHOLD,
+    ASSUMPTION_INVALIDATION_THRESHOLD,
+    EVIDENCE_CREDIBILITY_THRESHOLD,
 } = require('./constants');
 
 /**
@@ -41,6 +47,13 @@ const runDebate = async (topic, agents, maxTurns) => {
     // maxTurnsを1〜4にクランプ（0/null/undefinedはデフォルト2）
     const _raw = parseInt(maxTurns, 10);
     const clampedTurns = Math.max(1, Math.min(4, isNaN(_raw) ? 2 : _raw));
+
+    // エビデンスログ初期化
+    const evidenceLog = [];
+
+    // 前提分類配列（フェーズ2 Step4以降で使用）
+    let verifiableAssumptions = [];
+    let unverifiableAssumptions = [];
 
     // =============================
     // フェーズ1: 立場表明
@@ -80,6 +93,20 @@ const runDebate = async (topic, agents, maxTurns) => {
             ? r.value
             : { label: agents[i].label, text: '（情報取得失敗）' }
     );
+
+    // Phase2-Step1 完了後: エビデンス蓄積（構造化信頼性チェック）
+    const phase2StructuredCheck = await runCredibilityCheckStructured(phase2Research);
+    for (const [label, scoreData] of Object.entries(phase2StructuredCheck.scores)) {
+        if ((scoreData['平均'] || 0) >= EVIDENCE_CREDIBILITY_THRESHOLD) {
+            const agentRes = phase2Research.find(r => r.label === label);
+            evidenceLog.push({
+                phase: 'Phase2-Step1',
+                agentLabel: label,
+                text: agentRes ? agentRes.text.slice(0, 200) : '',
+                avgScore: scoreData['平均'],
+            });
+        }
+    }
 
     // Step 2: 信頼性検証（中立AIが一回だけ実行）
     console.log('[Phase2-Step2] 信頼性検証');
@@ -128,6 +155,22 @@ const runDebate = async (topic, agents, maxTurns) => {
     }));
     const decomposition = extractionResult.decomposition || {};
 
+    // Step 4 完了後: 前提分類処理
+    const assumptions = extractionResult.assumptions || [];
+    console.log('[Phase2-Step4] 抽出された前提一覧:', JSON.stringify(assumptions, null, 2));
+    if (assumptions.length > 0) {
+        for (const assumption of assumptions) {
+            const score = await checkAssumptionVerifiability(assumption.content);
+            console.log(`[Phase2-Step4] 前提「${assumption.content}」検証可能性スコア: ${score}`);
+            if (score >= ASSUMPTION_VERIFIABILITY_THRESHOLD) {
+                verifiableAssumptions.push(assumption);
+            } else {
+                unverifiableAssumptions.push(assumption);
+            }
+            await delay(1000);
+        }
+    }
+
     const phase2Result = {
         research: phase2Research,
         credibility: credibilityText,
@@ -138,40 +181,107 @@ const runDebate = async (topic, agents, maxTurns) => {
     console.log('[Phase2] 完了');
 
     // =============================
-    // フェーズ3: サブ議題別議論（深さ階層ごとにバッチ並行処理）
+    // フェーズ3: サブ議題別議論 & γ専用トラック（並行実行）
     // =============================
     console.log('[Phase3] 開始');
+    console.log('[Phase3-Gamma] γ専用トラック 開始');
 
     const phase3Results = [];
     let currentBatch = subTopics; // depth0のサブ議題が最初のバッチ
 
-    while (currentBatch.length > 0) {
-        console.log(`[Phase3] バッチ処理 depth=${currentBatch[0]?.depth}, 件数=${currentBatch.length}`);
-
-        const batchResults = await Promise.allSettled(
-            currentBatch.map(subTopic => processSubTopic(subTopic, agents, clampedTurns))
-        );
-
-        const nextBatch = [];
-
-        for (const result of batchResults) {
-            if (result.status === 'fulfilled') {
-                phase3Results.push(result.value);
-                // サブサブ議題を次のバッチに追加
-                if (result.value.subSubTopics && result.value.subSubTopics.length > 0) {
-                    nextBatch.push(...result.value.subSubTopics);
-                }
-            } else {
-                console.error('[Phase3] サブ議題処理失敗:', result.reason);
-            }
-        }
-
-        currentBatch = nextBatch;
+    // γトラック: 各前提に対するAPI呼び出しをPromise配列として構築（whileループと並行実行）
+    if (verifiableAssumptions.length === 0) {
+        console.log('[Phase3-Gamma] 検証可能前提なし スキップ');
     }
+    const gammaTrackPromise = verifiableAssumptions.length > 0
+        ? Promise.allSettled(
+            verifiableAssumptions.map(async (assumption) => {
+                console.log(`[Phase3-Gamma] 前提「${assumption.content}」処理中`);
 
-    console.log('[Phase3] 完了');
+                // 全エージェントのγ攻撃を並行生成
+                const gammaAgentResults = await Promise.allSettled(
+                    agents.map(async (agent) => {
+                        const prompt = buildPhase3GammaPrompt(agent, assumption.content);
+                        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+                        let text = await callGeminiWithRetry(contents, 3, true);
+                        text = await callGeminiWithRetryForSearchQuote(text, contents);
+                        return { label: agent.label, text: text || '（生成失敗）' };
+                    })
+                );
 
-    // サブ議題の結論サマリーを生成（フェーズ4で使用）
+                const gammaUtterances = gammaAgentResults
+                    .filter(r => r.status === 'fulfilled')
+                    .map(r => r.value);
+
+                // 信頼性チェック
+                const { text: gammaCredibilityText, scores: gammaScores } = await runCredibilityCheckStructured(gammaUtterances);
+
+                // evidenceLogへ追記（シングルスレッドのため競合なし）
+                for (const [label, scoreData] of Object.entries(gammaScores)) {
+                    if ((scoreData['平均'] || 0) >= EVIDENCE_CREDIBILITY_THRESHOLD) {
+                        const agentUtterance = gammaUtterances.find(u => u.label === label);
+                        evidenceLog.push({
+                            phase: 'Phase3-gamma',
+                            agentLabel: label,
+                            text: agentUtterance ? agentUtterance.text.slice(0, 200) : '',
+                            avgScore: scoreData['平均'],
+                        });
+                    }
+                }
+
+                // 反証成立度スコアリング
+                const gammaAttackText = gammaUtterances
+                    .map(u => `${u.label}: ${u.text}`)
+                    .join('\n');
+                const invalidationScore = await checkAssumptionInvalidation(
+                    assumption.content,
+                    gammaAttackText,
+                    gammaCredibilityText
+                );
+
+                return {
+                    assumption,
+                    gammaUtterances,
+                    invalidationScore,
+                    invalidated: invalidationScore >= ASSUMPTION_INVALIDATION_THRESHOLD,
+                };
+            })
+        )
+        : Promise.resolve([]);
+
+    // whileループをPromiseとして構築（γトラックと並行実行）
+    const phase3Promise = (async () => {
+        while (currentBatch.length > 0) {
+            console.log(`[Phase3] バッチ処理 depth=${currentBatch[0]?.depth}, 件数=${currentBatch.length}`);
+
+            const batchResults = await Promise.allSettled(
+                currentBatch.map(subTopic => processSubTopic(subTopic, agents, clampedTurns, evidenceLog))
+            );
+
+            const nextBatch = [];
+
+            for (const result of batchResults) {
+                if (result.status === 'fulfilled') {
+                    phase3Results.push(result.value);
+                    // サブサブ議題を次のバッチに追加
+                    if (result.value.subSubTopics && result.value.subSubTopics.length > 0) {
+                        nextBatch.push(...result.value.subSubTopics);
+                    }
+                } else {
+                    console.error('[Phase3] サブ議題処理失敗:', result.reason);
+                }
+            }
+
+            currentBatch = nextBatch;
+        }
+        console.log('[Phase3] 完了');
+    })();
+
+    // whileループとγトラックを並行待機
+    const [, gammaSettled] = await Promise.allSettled([phase3Promise, gammaTrackPromise]);
+    const gammaRawResults = (gammaSettled.status === 'fulfilled') ? gammaSettled.value : [];
+
+    // subTopicConclusions生成（phase3Results完了後）
     const subTopicConclusions = phase3Results.map(r => ({
         title: r.subTopic.title,
         conclusion: r.discussionLog.length > 0
@@ -180,6 +290,43 @@ const runDebate = async (topic, agents, maxTurns) => {
                 .join('\n')
             : '（議論なし）',
     }));
+
+    // assumptionDebateLog構築とshakenFlag付与（両Promise完了後）
+    const assumptionDebateLog = [];
+    for (const result of gammaRawResults) {
+        if (result.status === 'fulfilled') {
+            const { assumption, gammaUtterances, invalidationScore, invalidated } = result.value;
+
+            // 反証成立時: 依存エージェントが登場するサブ議題結論にshakenFlagを付与
+            if (invalidated) {
+                for (const dependentLabel of (assumption.dependsOn || [])) {
+                    for (const conclusion of subTopicConclusions) {
+                        const phase3Entry = phase3Results.find(r => r.subTopic.title === conclusion.title);
+                        if (phase3Entry) {
+                            const appearsInLog = phase3Entry.discussionLog.some(entry =>
+                                (entry.utterances || []).some(u => u.label === dependentLabel)
+                            );
+                            if (appearsInLog) {
+                                conclusion.shakenFlag = true;
+                                conclusion.invalidationReason = `前提「${assumption.content}」に対する反証スコア: ${invalidationScore}`;
+                            }
+                        }
+                    }
+                }
+            }
+
+            assumptionDebateLog.push({
+                id: assumption.id,
+                content: assumption.content,
+                invalidationScore,
+                invalidated,
+                gammaUtterances,
+            });
+        }
+    }
+
+    // shakenConclusions抽出
+    const shakenConclusions = subTopicConclusions.filter(s => s.shakenFlag === true);
 
     const subTopicSummariesText = subTopicConclusions
         .map(s => `【${s.title}】\n${s.conclusion}`)
@@ -194,7 +341,7 @@ const runDebate = async (topic, agents, maxTurns) => {
     console.log('[Phase4-Step1-Turn1] 統合表明ターン1');
     const phase4Turn1 = (await Promise.allSettled(
         agents.map(async (agent) => {
-            const prompt = buildPhase4Turn1Prompt(agent, subTopicSummariesText);
+            const prompt = buildPhase4Turn1Prompt(agent, subTopicSummariesText, shakenConclusions);
             const contents = [{ role: 'user', parts: [{ text: prompt }] }];
             const text = await callGeminiWithRetry(contents);
             return { label: agent.label, text: text || '（生成失敗）' };
@@ -212,7 +359,7 @@ const runDebate = async (topic, agents, maxTurns) => {
             const otherTurn1Texts = phase4Turn1
                 .filter(u => u.label !== agent.label)
                 .map(u => `${u.label}の統合表明: ${u.text}`);
-            const prompt = buildPhase4Turn2Prompt(agent, subTopicSummariesText, otherTurn1Texts);
+            const prompt = buildPhase4Turn2Prompt(agent, subTopicSummariesText, otherTurn1Texts, shakenConclusions);
             const contents = [{ role: 'user', parts: [{ text: prompt }] }];
             const text = await callGeminiWithRetry(contents);
             return { label: agent.label, text: text || '（生成失敗）' };
@@ -226,12 +373,16 @@ const runDebate = async (topic, agents, maxTurns) => {
     // Step 2: 最終まとめ（中立AIが一回だけ生成）
     console.log('[Phase4-Step2] 最終まとめ生成');
     const synthesisRound = { turn1: phase4Turn1, turn2: phase4Turn2 };
+    const validatedEvidenceList = evidenceLog.filter(e => e.avgScore >= EVIDENCE_CREDIBILITY_THRESHOLD);
     const finalSummary = await runFinalSummary(
         topic,
         agents,
         decomposition,
         subTopicConclusions,
-        synthesisRound
+        synthesisRound,
+        validatedEvidenceList,
+        unverifiableAssumptions,
+        assumptionDebateLog
     );
 
     const phase4Result = {
@@ -246,6 +397,7 @@ const runDebate = async (topic, agents, maxTurns) => {
         phase2: phase2Result,
         phase3: phase3Results,
         phase4: phase4Result,
+        assumptionDebateLog,
     };
 };
 
@@ -254,57 +406,92 @@ const runDebate = async (topic, agents, maxTurns) => {
  * @param {object} subTopic - { id, title, reason, depth }
  * @param {Array} agents
  * @param {number} maxTurns
+ * @param {Array} evidenceLog - 参照渡しのエビデンスログ配列
  * @returns {Promise<{subTopic, discussionLog, subSubTopics}>}
  */
-const processSubTopic = async (subTopic, agents, maxTurns) => {
+const processSubTopic = async (subTopic, agents, maxTurns, evidenceLog) => {
     const discussionLog = [];
     let discussedTopics = [];
     const subSubTopics = [];
     let prevUtterances = null;
 
     for (let turn = 0; turn < maxTurns; turn++) {
-        const attackMode = PHASE3_ATTACK_MODES[turn % PHASE3_ATTACK_MODES.length];
         const discussedTopicsStr = topicsToString(discussedTopics);
 
-        console.log(`[Phase3] サブ議題「${subTopic.title}」ターン${turn + 1} 攻撃モード:${attackMode}`);
+        console.log(`[Phase3] サブ議題「${subTopic.title}」ターン${turn + 1} αサブステップ`);
 
-        // 全エージェントの発言を並行生成
-        const utteranceResults = await Promise.allSettled(
+        // αサブステップ: 全エージェントの発言を並行生成（enableSearch=true）
+        const alphaResults = await Promise.allSettled(
             agents.map(async (agent) => {
                 const prompt = buildPhase3Prompt(
                     agent,
                     subTopic.title,
                     discussionLog,
-                    attackMode,
+                    'α',
                     discussedTopicsStr
                 );
                 const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-
-                let text = await callGeminiWithRetry(contents, 3, attackMode === 'α');
-
-                // αの攻撃モードで検索引用がない場合は再呼び出し
-                if (attackMode === 'α') {
-                    text = await callGeminiWithRetryForSearchQuote(text, contents);
-                }
-
+                let text = await callGeminiWithRetry(contents, 3, true);
+                text = await callGeminiWithRetryForSearchQuote(text, contents);
                 return { label: agent.label, text: text || '（生成失敗）' };
             })
         );
 
-        const currentUtterances = utteranceResults
+        const alphaUtterances = alphaResults
             .filter(r => r.status === 'fulfilled')
             .map(r => r.value);
 
-        discussionLog.push({ turn: turn + 1, attackMode, utterances: currentUtterances });
+        // αのエビデンス蓄積
+        const { text: alphaCredibilityText, scores: alphaScores } = await runCredibilityCheckStructured(alphaUtterances);
+        for (const [label, scoreData] of Object.entries(alphaScores)) {
+            if ((scoreData['平均'] || 0) >= EVIDENCE_CREDIBILITY_THRESHOLD) {
+                const agentUtterance = alphaUtterances.find(u => u.label === label);
+                evidenceLog.push({
+                    phase: 'Phase3-alpha',
+                    agentLabel: label,
+                    text: agentUtterance ? agentUtterance.text.slice(0, 200) : '',
+                    avgScore: scoreData['平均'],
+                });
+            }
+        }
 
-        // 議論済み論点リストをAIで更新
-        const newTopics = await extractTopicsFromUtterances(currentUtterances);
+        await delay(1000);
+
+        console.log(`[Phase3] サブ議題「${subTopic.title}」ターン${turn + 1} βサブステップ`);
+
+        // βサブステップ: 全エージェントの発言を並行生成（enableSearch=false、alphaCredibilityText注入）
+        const betaResults = await Promise.allSettled(
+            agents.map(async (agent) => {
+                const prompt = buildPhase3Prompt(
+                    agent,
+                    subTopic.title,
+                    discussionLog,
+                    'β',
+                    discussedTopicsStr,
+                    alphaCredibilityText
+                );
+                const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+                const text = await callGeminiWithRetry(contents, 3, false);
+                return { label: agent.label, text: text || '（生成失敗）' };
+            })
+        );
+
+        const betaUtterances = betaResults
+            .filter(r => r.status === 'fulfilled')
+            .map(r => r.value);
+
+        // discussionLogにαとβをそれぞれ追加
+        discussionLog.push({ turn: turn + 1, attackMode: 'α', subStep: 'α', utterances: alphaUtterances });
+        discussionLog.push({ turn: turn + 1, attackMode: 'β', subStep: 'β', utterances: betaUtterances });
+
+        // 議論済み論点リストをAIで更新（betaUtterancesを使用）
+        const newTopics = await extractTopicsFromUtterances(betaUtterances);
         discussedTopics = addTopicsToList(discussedTopics, newTopics);
 
-        // ターン2以降、かつdepthが2未満の場合にセマンティック分岐を判定
+        // ターン2以降、かつdepthが2未満の場合にセマンティック分岐を判定（betaUtterancesを使用）
         if (turn >= 1 && prevUtterances && subTopic.depth < 1) {
             const prevTexts = prevUtterances.map(u => `${u.label}: ${u.text}`);
-            const currentTexts = currentUtterances.map(u => `${u.label}: ${u.text}`);
+            const currentTexts = betaUtterances.map(u => `${u.label}: ${u.text}`);
             const branchScore = await checkSemanticBranch(prevTexts, currentTexts);
 
             console.log(`[Phase3] 分岐スコア: ${branchScore} (閾値: ${SEMANTIC_BRANCH_THRESHOLD})`);
@@ -323,7 +510,7 @@ const processSubTopic = async (subTopic, agents, maxTurns) => {
             }
         }
 
-        prevUtterances = currentUtterances;
+        prevUtterances = betaUtterances;
         await delay(1000);
     }
 
