@@ -626,6 +626,7 @@ const startDebate = async () => {
         renderPhase2(data.phase2);
         renderPhase3(data.phase3);
         renderPhase4(data.phase4);
+        renderAssumptionDebateLog(data.assumptionDebateLog);
 
         // resultArea を先に表示してからマインドマップを描画
         // （コンテナに実寸が付いた状態で mermaid を初期化するため）
