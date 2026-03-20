@@ -61,7 +61,7 @@
 
   .debate-index-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 1rem;
   }
 
@@ -190,6 +190,16 @@
     margin-top: 0.45rem;
   }
 
+  .debate-mindmap-section .card + .card {
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 1199px) {
+    .debate-index-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
   @media (max-width: 991px) {
     .debate-index-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -214,6 +224,7 @@
 </header>
 
 <div class="pb-5">
+  <!-- コメント: 議題と各エージェントの立場を入力するフォーム領域 -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <div class="mb-4">
@@ -226,6 +237,7 @@
         ></textarea><!-- コメント: デモ終了で初期入力を空に戻す -->
       </div>
 
+      <!-- コメント: エージェントごとの主張・理由・前提条件を入力するカード群 -->
       <div id="agentsContainer" class="row mb-3">
         <div class="col-md-6 mb-4 agent-col" data-index="0">
           <div class="border rounded p-3 agent-card" data-agent-index="0">
@@ -276,6 +288,7 @@
         </div>
       </div>
 
+      <!-- コメント: エージェント追加は main.js 側の addAgentCard が担当する -->
       <div class="mb-4">
         <button id="addAgentBtn" type="button" class="btn btn-outline-secondary">
           + エージェントを追加
@@ -283,6 +296,7 @@
         <span class="text-muted small ms-2">最大 6 人まで追加できます。</span>
       </div>
 
+      <!-- コメント: フェーズ3の最大ターン数だけを個別に調整できる入力 -->
       <div class="mb-4">
         <label for="maxTurns" class="form-label fw-semibold">フェーズ3の議論ターン数</label>
         <div class="d-flex align-items-center gap-3">
@@ -299,6 +313,7 @@
         </div>
       </div>
 
+      <!-- コメント: main.js の startDebate 起点となる実行ボタン -->
       <div class="d-grid d-md-flex">
         <button id="startBtn" class="btn btn-dark btn-lg px-5">
           議論開始
@@ -307,7 +322,10 @@
     </div>
   </div>
 
+  <!-- コメント: overview 表示時に最終総括レポートを差し込む基準位置 -->
   <div id="summaryOverviewMount"></div>
+
+  <!-- コメント: main.js が描画する最終総括レポート本体。overview とフェーズ5で移設して使い回す -->
   <section id="summaryReportSection" class="d-none mb-4">
     <div class="card border-success shadow-sm">
       <div class="card-header bg-success text-white fw-semibold">
@@ -319,6 +337,42 @@
     </div>
   </section>
 
+  <!-- コメント: debate.ejs と同じ id を維持したマインドマップ表示領域。overview では summary の直下に表示する -->
+  <section id="mindmapOverviewSection" class="debate-mindmap-section d-none mb-4">
+    <!-- コメント: 議論フェーズ全体を俯瞰するマインドマップ -->
+    <div class="card border-success shadow-sm">
+      <div class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
+        <span>マインドマップ1（議論フェーズ）</span>
+        <button id="downloadMindmapBtn" class="btn btn-sm btn-light d-none" type="button">
+          画像を保存（PNG）
+        </button>
+      </div>
+      <div class="card-body pb-2">
+        <div id="mindmapContent" style="width:100%;height:75vh;min-height:400px;overflow:auto;border:1px solid #dee2e6;border-radius:0.375rem;"></div>
+        <p class="text-muted small mt-2 mb-0 text-center">
+          Ctrl＋スクロール: ズーム ／ スクロールバー: 移動
+        </p>
+      </div>
+    </div>
+
+    <!-- コメント: 統合フェーズの整理結果を別マインドマップとして表示 -->
+    <div class="card border-success shadow-sm">
+      <div class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
+        <span>マインドマップ2（統合フェーズ）</span>
+        <button id="downloadMindmap2Btn" class="btn btn-sm btn-light d-none" type="button">
+          画像を保存（PNG）
+        </button>
+      </div>
+      <div class="card-body pb-2">
+        <div id="mindmapContent2" style="width:100%;height:75vh;min-height:400px;overflow:auto;border:1px solid #dee2e6;border-radius:0.375rem;"></div>
+        <p class="text-muted small mt-2 mb-0 text-center">
+          Ctrl＋スクロール: ズーム ／ スクロールバー: 移動
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- コメント: 結果全体の入口となるカード型目次。overview 時のみ表示する -->
   <section id="debateIndexSection" class="debate-index-section d-none">
     <div class="debate-index-shell">
       <div class="card-body p-4 p-lg-5">
@@ -355,8 +409,8 @@
               </span>
               <span class="debate-index-phase">Phase 2</span>
             </div>
-            <h3 class="debate-index-card-title">反論・情報取得</h3>
-            <p class="debate-index-card-text">相手の論点を分析し、根拠と反論の材料を集めます。</p>
+            <h3 class="debate-index-card-title">情報取得・反論・サブ議題抽出</h3>
+            <p class="debate-index-card-text">相手の論点を分析し、反論材料と深掘り対象の論点を整理します。</p>
           </article>
 
           <article class="debate-index-card" data-phase-index="2" role="button" tabindex="0" aria-label="フェーズ3を開く">
@@ -377,11 +431,25 @@
             <div class="debate-index-top">
               <span class="debate-index-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6 6h12v4H6zM8 10v3.5M16 10v3.5M8 13.5h8M12 13.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="18.5" r="1.5" stroke="currentColor" stroke-width="1.8"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 4</span>
+            </div>
+            <h3 class="debate-index-card-title">前提検証</h3>
+            <p class="debate-index-card-text">反証成立の有無を確認します。</p>
+          </article>
+
+          <article class="debate-index-card" data-phase-index="4" role="button" tabindex="0" aria-label="フェーズ5を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
                   <path d="M12 4v4M12 16v4M6.5 7.5 9 10M15 14l2.5 2.5M4 12h4M16 12h4M6.5 16.5 9 14M15 10l2.5-2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                   <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.8"/>
                 </svg>
               </span>
-              <span class="debate-index-phase">Phase 4</span>
+              <span class="debate-index-phase">Phase 5</span>
             </div>
             <h3 class="debate-index-card-title">統合・結論</h3>
             <p class="debate-index-card-text">最終ラウンドと総括に向けて、結論と統合視点を確認します。</p>
@@ -391,7 +459,9 @@
     </div>
   </section>
 
+  <!-- コメント: フェーズ詳細画面。overview から遷移したときは 1 セクションずつ表示する -->
   <div id="resultArea" class="d-none">
+    <!-- コメント: フェーズ1の描画先。main.js の renderPhase1 が中身を構築する -->
     <div class="mb-4 debate-phase-section" data-phase-index="0">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ1: 意見表明</h2>
       <p class="debate-phase-description">初期主張と前提を整理し、議論の出発点を確認します。</p>
@@ -400,9 +470,10 @@
       </div>
     </div>
 
+    <!-- コメント: フェーズ2の各ステップをひとつの accordion にまとめて表示する -->
     <div class="mb-4 debate-phase-section" data-phase-index="1">
-      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ2: 反論・情報取得</h2>
-      <p class="debate-phase-description">相手の論点を分析し、根拠と反論の材料を集めます。</p>
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ2: 情報取得・反論・サブ議題抽出</h2>
+      <p class="debate-phase-description">相手の論点を分析し、根拠収集から反論整理、深掘り論点の抽出までを行います。</p>
       <div class="debate-step-guide">
         <!-- コメント: フェーズ2の各ステップ説明を結果画面内に表示 -->
         <div class="debate-step-guide-title">このフェーズで行うこと</div>
@@ -429,6 +500,7 @@
       </div>
     </div>
 
+    <!-- コメント: フェーズ3はサブ議題ごとの入れ子 accordion で深掘りを見せる -->
     <div class="mb-4 debate-phase-section" data-phase-index="2">
       <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ3: サブ議題議論</h2>
       <p class="debate-phase-description">主要論点を分解し、論点ごとの議論を深掘りします。</p>
@@ -437,30 +509,50 @@
       </div>
     </div>
 
-    <div class="mb-4 debate-phase-section" data-phase-index="3">
-      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ4: 統合表明とまとめ</h2>
+    <!-- コメント: debate.ejs から移植した前提検証セクション。フェーズ4カードからこのセクションを開く -->
+    <div id="assumptionTrackSection" class="mb-4 debate-phase-section d-none" data-phase-index="3">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ4: 前提検証</h2>
+      <p class="debate-phase-description">議論で置かれた前提を別トラックで揺さぶり、どこまで反証できるかを確認します。</p>
+      <!-- コメント: 前提検証の結果が未生成のときに表示する案内 -->
+      <p id="assumptionTrackEmptyState" class="text-muted mb-3 d-none">前提検証の結果はまだありません。</p>
+      <div class="accordion" id="assumptionTrackAccordion">
+        <div id="assumptionTrackContent"></div>
+      </div>
+    </div>
+
+    <!-- コメント: main.js の phase4 描画先 id はそのまま使い、UI 上はフェーズ5として見せる -->
+    <div class="mb-4 debate-phase-section" data-phase-index="4">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ5: 統合表明とまとめ</h2>
       <p class="debate-phase-description">最終ラウンドと総括に向けて、結論と統合視点を確認します。</p>
       <div id="phase4Content"></div>
-      <div id="phase4SummaryMount" class="mt-4"></div>
+      <!-- コメント: overview 用の summary セクションを、フェーズ5表示時だけここへ差し替える -->
+      <div id="phase5SummaryMount" class="mt-4"></div>
     </div>
   </div>
 </div>
 
+<% block('script').append('<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>') %>
 <% block('script').append('<script src="/js/main.js"></script>') %>
 <% block('script').append(`
 <script>
   document.addEventListener('DOMContentLoaded', () => {
+    // コメント: overview 表示とフェーズ詳細表示を切り替えるための主要ノード群
     const resultArea = document.getElementById('resultArea');
     const summaryOverviewMount = document.getElementById('summaryOverviewMount');
     const summarySection = document.getElementById('summaryReportSection');
+    const mindmapSection = document.getElementById('mindmapOverviewSection');
     const indexSection = document.getElementById('debateIndexSection');
     const phaseSections = Array.from(resultArea?.querySelectorAll('.debate-phase-section') || []);
     const indexCards = Array.from(indexSection?.querySelectorAll('.debate-index-card') || []);
-    const phase4SummaryMount = document.getElementById('phase4SummaryMount');
+    const assumptionTrackSection = phaseSections.find((section) => section.dataset.phaseIndex === '3');
+    const assumptionTrackContent = document.getElementById('assumptionTrackContent');
+    const assumptionTrackEmptyState = document.getElementById('assumptionTrackEmptyState');
+    const phase5SummaryMount = document.getElementById('phase5SummaryMount');
 
-    if (!resultArea || !summarySection || !summaryOverviewMount || !indexSection || !phaseSections.length) return;
+    if (!resultArea || !summarySection || !summaryOverviewMount || !mindmapSection || !indexSection || !phaseSections.length) return;
     if (document.getElementById('debatePhaseNavBottom')) return;
 
+    // コメント: フェーズ詳細画面の下端にだけ前後移動ナビを出す
     const createPhaseNav = (navId) => {
       const nav = document.createElement('div');
       nav.id = navId;
@@ -476,17 +568,19 @@
     const bottomNav = createPhaseNav('debatePhaseNavBottom');
     resultArea.insertAdjacentElement('beforeend', bottomNav);
 
+    // コメント: 現在開いているフェーズ番号。前へ / 次へ の基準に使う
     let currentPhaseIndex = 0;
 
+    // コメント: summary は overview では上部固定、詳細ではフェーズ5内へ移設して再利用する
     const placeSummaryInOverview = () => {
       if (summaryOverviewMount.nextElementSibling !== summarySection) {
         summaryOverviewMount.insertAdjacentElement('afterend', summarySection);
       }
     };
 
-    const placeSummaryInPhase4 = () => {
-      if (phase4SummaryMount && phase4SummaryMount.firstElementChild !== summarySection) {
-        phase4SummaryMount.replaceChildren(summarySection);
+    const placeSummaryInPhase5 = () => {
+      if (phase5SummaryMount && phase5SummaryMount.firstElementChild !== summarySection) {
+        phase5SummaryMount.replaceChildren(summarySection);
       }
     };
 
@@ -496,6 +590,19 @@
       });
     };
 
+    // コメント: カードの並び順と前後遷移は data-phase-index をそのまま使って固定化する
+    const getPhaseIndices = () => phaseSections
+      .map((section) => Number(section.dataset.phaseIndex));
+
+    // コメント: フェーズ4の「空状態メッセージ」だけを内容の有無に応じて切り替える
+    const updateAssumptionTrackState = () => {
+      const hasAssumptionResults = Boolean(assumptionTrackContent && assumptionTrackContent.children.length > 0);
+      if (assumptionTrackEmptyState) {
+        assumptionTrackEmptyState.classList.toggle('d-none', hasAssumptionResults);
+      }
+    };
+
+    // コメント: 目次カードの強調表示だけを担当し、表示 / 非表示の切り替えはしない
     const setActiveIndexCard = (phaseIndex) => {
       indexCards.forEach((card) => {
         const cardIndex = Number(card.dataset.phaseIndex);
@@ -503,61 +610,77 @@
       });
     };
 
+    // コメント: 結果未表示時は overview 要素をまとめて閉じ、詳細セクションも全て隠す
     const syncResultSectionsVisibility = () => {
       const shouldHide = resultArea.classList.contains('d-none');
       placeSummaryInOverview();
+      updateAssumptionTrackState();
       summarySection.classList.toggle('d-none', shouldHide);
+      mindmapSection.classList.toggle('d-none', shouldHide);
       indexSection.classList.toggle('d-none', shouldHide);
       bottomNav.classList.toggle('d-none', true);
       hideAllPhaseSections();
       setActiveIndexCard(-1);
     };
 
+    // コメント: 結果表示直後は summary -> mindmap -> index の順で overview を見せる
     const renderOverview = () => {
       hideAllPhaseSections();
       placeSummaryInOverview();
+      updateAssumptionTrackState();
       bottomNav.classList.add('d-none');
       summarySection.classList.remove('d-none');
+      mindmapSection.classList.remove('d-none');
       indexSection.classList.remove('d-none');
       setActiveIndexCard(-1);
-      indexSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      summarySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
+    // コメント: 目次カード選択時は対象フェーズだけを表示し、必要に応じて summary の配置先も切り替える
     const openPhase = (phaseIndex) => {
       const targetSection = phaseSections[phaseIndex];
       if (!targetSection) return;
 
+      const phaseIndices = getPhaseIndices();
+      const phaseOrder = phaseIndices.indexOf(phaseIndex);
+
       currentPhaseIndex = phaseIndex;
       hideAllPhaseSections();
+      updateAssumptionTrackState();
       indexSection.classList.add('d-none');
+      mindmapSection.classList.add('d-none');
       bottomNav.classList.remove('d-none');
       targetSection.classList.remove('d-none');
 
-      if (phaseIndex === 3) {
-        placeSummaryInPhase4();
+      if (phaseIndex === 4) {
+        placeSummaryInPhase5();
         summarySection.classList.remove('d-none');
       } else {
         placeSummaryInOverview();
         summarySection.classList.add('d-none');
       }
 
-      bottomNav.querySelector('[data-action="prev"]').classList.toggle('d-none', phaseIndex === 0);
-      bottomNav.querySelector('[data-action="next"]').classList.toggle('d-none', phaseIndex === phaseSections.length - 1);
+      bottomNav.querySelector('[data-action="prev"]').classList.toggle('d-none', phaseOrder <= 0);
+      bottomNav.querySelector('[data-action="next"]').classList.toggle('d-none', phaseOrder === -1 || phaseOrder >= phaseIndices.length - 1);
 
       setActiveIndexCard(phaseIndex);
       targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
+    // コメント: 前へ / 次へ は phaseSections の並び順をそのまま使って移動する
     const handleNavClick = (event) => {
       const action = event.target.closest('button')?.dataset.action;
       if (!action) return;
-      if (action === 'prev' && currentPhaseIndex > 0) openPhase(currentPhaseIndex - 1);
-      if (action === 'next' && currentPhaseIndex < phaseSections.length - 1) openPhase(currentPhaseIndex + 1);
+      const phaseIndices = getPhaseIndices();
+      const currentOrder = phaseIndices.indexOf(currentPhaseIndex);
+      if (action === 'prev' && currentOrder > 0) openPhase(phaseIndices[currentOrder - 1]);
+      if (action === 'next' && currentOrder > -1 && currentOrder < phaseIndices.length - 1) openPhase(phaseIndices[currentOrder + 1]);
       if (action === 'index') renderOverview();
     };
 
     bottomNav.addEventListener('click', handleNavClick);
 
+    // コメント: 各目次カードにクリック / Enter / Space の操作を割り当てる
     indexCards.forEach((card) => {
       const phaseIndex = Number(card.dataset.phaseIndex);
       card.addEventListener('click', () => openPhase(phaseIndex));
@@ -571,6 +694,7 @@
 
     syncResultSectionsVisibility();
 
+    // コメント: main.js が resultArea の d-none を切り替えたら overview / detail の見え方も同期する
     const observer = new MutationObserver(() => {
       if (resultArea.classList.contains('d-none')) {
         syncResultSectionsVisibility();
@@ -580,6 +704,16 @@
     });
 
     observer.observe(resultArea, { attributes: true, attributeFilter: ['class'] });
+
+    // コメント: 前提検証の描画結果に応じて、空状態メッセージだけを更新する
+    if (assumptionTrackSection && assumptionTrackContent) {
+      const assumptionObserver = new MutationObserver(() => {
+        updateAssumptionTrackState();
+      });
+
+      assumptionObserver.observe(assumptionTrackSection, { attributes: true, attributeFilter: ['class'] });
+      assumptionObserver.observe(assumptionTrackContent, { childList: true });
+    }
   });
 </script>
 `) %>
