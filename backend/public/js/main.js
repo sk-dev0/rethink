@@ -258,6 +258,7 @@ const renderPhase3 = (phase3) => {
                     ti === 0
                 );
             }).join('')}</div>`;
+           
 
         // ボタンのテキストにバッジHTMLを含めたいのでescを使わずinnerHTMLとして挿入
         const itemId = `p3_${i}`;
@@ -318,56 +319,12 @@ const renderPhase4 = (phase4) => {
 };
 
 /* =============================
-   描画: 前提検証トラック
-============================= */
-
-const renderAssumptionDebateLog = (assumptionDebateLog) => {
-    const section = document.getElementById('assumptionTrackSection');
-    const container = document.getElementById('assumptionTrackContent');
-    if (!section || !container) return;
-
-    if (!assumptionDebateLog || assumptionDebateLog.length === 0) {
-        section.classList.add('d-none');
-        return;
-    }
-
-    section.classList.remove('d-none');
-    container.innerHTML = '';
-
-    const accId = 'assumptionTrackAccordion';
-    assumptionDebateLog.forEach((entry, i) => {
-        const itemId = `at_${i}`;
-        const titleShort = entry.content ? entry.content.slice(0, 20) : '';
-        const accordionTitle = `${esc(entry.id || String(i))}: ${esc(titleShort)}`;
-        const invalidatedLabel = (entry.invalidationScore || 0) >= 0.7 ? '反証成立' : '反証未成立';
-
-        const utterancesHtml = (entry.gammaUtterances || []).map(u =>
-            `<div class="mb-2">
-                <span class="badge bg-dark me-1">${esc(u.label)}</span>
-                ${preText(u.text)}
-            </div>`
-        ).join('');
-
-        const bodyHtml = `
-<p class="mb-1"><strong>反証スコア:</strong> ${esc(String(entry.invalidationScore || 0))}</p>
-<p class="mb-2"><strong>判定:</strong> ${esc(invalidatedLabel)}</p>
-<h6 class="fw-semibold mt-3">γ攻撃発言</h6>
-${utterancesHtml}`;
-
-        container.insertAdjacentHTML('beforeend',
-            createAccordionItem(accId, itemId, accordionTitle, bodyHtml, i === 0)
-        );
-    });
-};
-
-/* =============================
    描画: マインドマップ
    方式: SVG サイズ直接制御 + container overflow:auto（OS標準スクロールバー）
    ズーム: Ctrl+スクロール（マウス位置中心）
    縮小限: 横スクロールが消えるまで（SVG幅 ≤ コンテナ幅）
    拡大限: デフォルトスケールの2倍
 ============================= */
-
 /**
  * containerId → { naturalW, naturalH, defaultScale, currentScale,
  *                 minScale, maxScale, applyScale, wheelHandler }
@@ -573,6 +530,48 @@ const downloadMindmap = (containerId, filename) => {
 };
 
 /* =============================
+   描画: 前提検証トラック
+============================= */
+const renderAssumptionDebateLog = (assumptionDebateLog) => {
+    const section = document.getElementById('assumptionTrackSection');
+    const container = document.getElementById('assumptionTrackContent');
+    if (!section || !container) return;
+
+    if (!assumptionDebateLog || assumptionDebateLog.length === 0) {
+        section.classList.add('d-none');
+        return;
+    }
+
+    section.classList.remove('d-none');
+    container.innerHTML = '';
+
+    const accId = 'assumptionTrackAccordion';
+    assumptionDebateLog.forEach((entry, i) => {
+        const itemId = `at_${i}`;
+        const titleShort = entry.content ? entry.content.slice(0, 20) : '';
+        const accordionTitle = `${esc(entry.id || String(i))}: ${esc(titleShort)}`;
+        const invalidatedLabel = (entry.invalidationScore || 0) >= 0.7 ? '反証成立' : '反証未成立';
+
+        const utterancesHtml = (entry.gammaUtterances || []).map(u =>
+            `<div class="mb-2">
+                <span class="badge bg-dark me-1">${esc(u.label)}</span>
+                ${preText(u.text)}
+            </div>`
+        ).join('');
+
+        const bodyHtml = `
+<p class="mb-1"><strong>反証スコア:</strong> ${esc(String(entry.invalidationScore || 0))}</p>
+<p class="mb-2"><strong>判定:</strong> ${esc(invalidatedLabel)}</p>
+<h6 class="fw-semibold mt-3">γ攻撃発言</h6>
+${utterancesHtml}`;
+
+        container.insertAdjacentHTML('beforeend',
+            createAccordionItem(accId, itemId, accordionTitle, bodyHtml, i === 0)
+        );
+    });
+};
+
+/* =============================
    議論開始
 ============================= */
 
@@ -637,12 +636,12 @@ const startDebate = async () => {
 ============================= */
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('startBtn').addEventListener('click', startDebate);
-    document.getElementById('addAgentBtn').addEventListener('click', addAgentCard);
-    document.getElementById('downloadMindmapBtn').addEventListener('click', () =>
+    document.getElementById('startBtn')?.addEventListener('click', startDebate);
+    document.getElementById('addAgentBtn')?.addEventListener('click', addAgentCard);
+    document.getElementById('downloadMindmapBtn')?.addEventListener('click', () =>
         downloadMindmap('mindmapContent', 'mindmap1')
     );
-    document.getElementById('downloadMindmap2Btn').addEventListener('click', () =>
+    document.getElementById('downloadMindmap2Btn')?.addEventListener('click', () =>
         downloadMindmap('mindmapContent2', 'mindmap2')
     );
 });
