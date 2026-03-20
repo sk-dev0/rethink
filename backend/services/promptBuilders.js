@@ -116,9 +116,10 @@ ${credibilityText}
  * @param {Array} log - これまでの発言ログ
  * @param {string} attackMode - 現在の攻撃モード（α/β/γ/δ）
  * @param {string} discussedTopicsStr - 議論済み論点リスト（カンマ区切り）
+ * @param {string} [alphaCredibilityText] - 直前のαで取得された情報の信頼性チェック結果（省略可能）
  * @returns {string} プロンプト文字列
  */
-const buildPhase3Prompt = (agent, subTopicTitle, log, attackMode, discussedTopicsStr) => {
+const buildPhase3Prompt = (agent, subTopicTitle, log, attackMode, discussedTopicsStr, alphaCredibilityText) => {
     const logText = log.length === 0
         ? '(まだ発言はありません)'
         : log.map(entry =>
@@ -132,13 +133,20 @@ const buildPhase3Prompt = (agent, subTopicTitle, log, attackMode, discussedTopic
         ? `\n【議論済み論点(繰り返し禁止)】\n以下の論点はすでに議論済みである。これらを繰り返さず、新たな角度から攻撃すること。\n${discussedTopicsStr}\n`
         : '';
 
+    let alphaCredibilitySection = '';
+    if (attackMode === 'β' && alphaCredibilityText) {
+        alphaCredibilitySection = `\n【直前のαで取得された情報の信頼性チェック結果】
+${alphaCredibilityText}
+相手が直前のαターンで引用した情報はこの信頼性チェック結果が示す通り信頼性に問題がある可能性がある。この点を踏まえ、βモードの適用条件限定化攻撃においてもデータ信頼性の低さを連鎖的に組み合わせて攻撃せよ\n`;
+    }
+
     return `あなたは「${agent.label}」のAIエージェントです。
 自分の主張「${agent.coreClaim}」と前提条件「${agent.preconditions}」を一貫して守りながら、サブ議題「${subTopicTitle}」の文脈で相手の論点に反論してください。
 
 【これまでの発言ログ】
 以下のログを参照し、相手の最新の主張を特定した上で反論すること。
 ${logText}
-${discussedPart}
+${discussedPart}${alphaCredibilitySection}
 【攻撃戦略】
 以下の攻撃モードの指示に従い、反論を構成すること。
 ${attackInstruction}
@@ -169,19 +177,55 @@ const buildAttackModeInstruction = (mode) => {
 };
 
 /**
+ * フェーズ3γ攻撃: 前提への反証プロンプト生成
+ * @param {object} agent - エージェント情報
+ * @param {string} assumptionText - 攻撃対象の前提テキスト
+ * @returns {string} プロンプト文字列
+ */
+const buildPhase3GammaPrompt = (agent, assumptionText) => {
+    return `あなたは「${agent.label}」のAIエージェントです。自分の主張「${agent.coreClaim}」と前提条件「${agent.preconditions}」を一貫して守りながら、以下の攻撃対象の前提のみを攻撃してください。
+
+【攻撃対象の前提】
+以下の前提のみを攻撃対象とすること。
+${assumptionText}
+
+【攻撃指示】
+この前提が事実として誤りであること、または前提を支持するデータが存在しないことを示すため、ウェブ検索で反証データを1件取得して引用すること。検索取得:という文言を前置きして情報源のURLまたは組織名と発行日を明示すること。
+
+【禁止事項】
+- 指定された前提以外の論点を攻撃すること
+- βモードの適用条件限定化の形式での攻撃（それはXという条件下でのみ成立するという形式）
+
+【制約】
+- 回答全体を${PHASE2_3_MAX_CHARS}文字以内に収めること
+- 日本語で記述すること`;
+};
+
+/**
  * フェーズ4ターン1: 独立統合表明プロンプト生成
  * @param {object} agent - エージェント情報
  * @param {string} subTopicSummaries - 全サブ議題の結論サマリー
+ * @param {Array} [shakenConclusions] - 動揺フラグ付き結論エントリの配列（省略可能）
  * @returns {string} プロンプト文字列
  */
-const buildPhase4Turn1Prompt = (agent, subTopicSummaries) => {
+const buildPhase4Turn1Prompt = (agent, subTopicSummaries, shakenConclusions) => {
+    let shakenSection = '';
+    if (shakenConclusions && shakenConclusions.length > 0) {
+        const shakenList = shakenConclusions
+            .map(s => `・${s.title}: ${s.invalidationReason}`)
+            .join('\n');
+        shakenSection = `\n【動揺フラグ付き結論】
+以下に挙げる結論は、その結論が依拠していた前提に対して反証が提示されているため条件付きである。手順2の譲歩する点および手順3の残存する対立点において、これらの結論を参照する場合は当該前提が成立する場合に限り有効であることを明示すること。
+${shakenList}\n`;
+    }
+
     return `あなたは「${agent.label}」というアイデアを代弁するAIエージェントです。
 自分の主張「${agent.coreClaim}」と前提条件「${agent.preconditions}」を一貫して守りながら、以下の手順で統合表明を行ってください。
 
 【全サブ議題の議論結論】
 以下の各サブ議題の結論を根拠として、手順1〜手順3の記述に活用すること。
 ${subTopicSummaries}
-
+${shakenSection}
 【記述手順(必ず以下の見出しをそのまま使用して記述すること)】
 「手順1 維持する主張:」という見出しを記述した上で、議論を経ても変わらず支持する自分の主張の核心を明示すること
 「手順2 譲歩する点:」という見出しを記述した上で、議論を通じて認める部分を具体的に記述すること
@@ -197,12 +241,23 @@ ${subTopicSummaries}
  * @param {object} agent - エージェント情報
  * @param {string} subTopicSummaries - 全サブ議題の結論サマリー
  * @param {string[]} otherAgentTurn1Texts - 他エージェントのターン1での統合表明テキスト配列
+ * @param {Array} [shakenConclusions] - 動揺フラグ付き結論エントリの配列（省略可能）
  * @returns {string} プロンプト文字列
  */
-const buildPhase4Turn2Prompt = (agent, subTopicSummaries, otherAgentTurn1Texts) => {
+const buildPhase4Turn2Prompt = (agent, subTopicSummaries, otherAgentTurn1Texts, shakenConclusions) => {
     const othersStr = otherAgentTurn1Texts && otherAgentTurn1Texts.length > 0
         ? `\n【他のエージェントのターン1での統合表明】\n以下の各エージェントの統合表明を参照し、自分の立場との差異を手順2・手順3に反映すること。\n${otherAgentTurn1Texts.join('\n\n')}\n`
         : '';
+
+    let shakenSection = '';
+    if (shakenConclusions && shakenConclusions.length > 0) {
+        const shakenList = shakenConclusions
+            .map(s => `・${s.title}: ${s.invalidationReason}`)
+            .join('\n');
+        shakenSection = `\n【動揺フラグ付き結論】
+以下に挙げる結論は、その結論が依拠していた前提に対して反証が提示されているため条件付きである。手順2の譲歩する点および手順3の残存する対立点において、これらの結論を参照する場合は当該前提が成立する場合に限り有効であることを明示すること。
+${shakenList}\n`;
+    }
 
     return `あなたは「${agent.label}」というアイデアを代弁するAIエージェントです。
 自分の主張「${agent.coreClaim}」と前提条件「${agent.preconditions}」を一貫して守りながら、他のエージェントの統合表明を踏まえた上で、以下の手順で統合表明を行ってください。
@@ -210,8 +265,7 @@ const buildPhase4Turn2Prompt = (agent, subTopicSummaries, otherAgentTurn1Texts) 
 【全サブ議題の議論結論】
 以下の各サブ議題の結論を根拠として、手順1〜手順3の記述に活用すること。
 ${subTopicSummaries}
-${othersStr}
-
+${othersStr}${shakenSection}
 【記述手順(必ず以下の見出しをそのまま使用して記述すること)】
 「手順1 維持する主張:」という見出しを記述した上で、議論を経ても変わらず支持する自分の主張の核心を明示すること
 「手順2 譲歩する点:」という見出しを記述した上で、他の主張から学び、認める部分を具体的に記述すること
@@ -227,6 +281,7 @@ module.exports = {
     buildPhase2Step1Prompt,
     buildPhase2Step3Prompt,
     buildPhase3Prompt,
+    buildPhase3GammaPrompt,
     buildAttackModeInstruction,
     buildPhase4Turn1Prompt,
     buildPhase4Turn2Prompt,
