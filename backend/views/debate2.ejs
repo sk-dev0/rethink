@@ -1,0 +1,495 @@
+<% layout('layout/boilerplates') %>
+<% block('style').append('<link href="/css/debate.css" rel="stylesheet">') %>
+<% block('style').append(`
+<style>
+  .debate-detail-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin: 1rem 0 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .debate-index-section {
+    margin-bottom: 2rem;
+  }
+
+  .debate-index-shell {
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.75rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    background: #fff;
+  }
+
+  .debate-index-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .debate-index-kicker {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(31, 105, 136, 0.1);
+    color: #1f6988;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+
+  .debate-index-title {
+    margin: 0 0 0.55rem;
+    font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .debate-index-text {
+    margin: 0;
+    max-width: 680px;
+    color: #5f6b76;
+    line-height: 1.7;
+  }
+
+  .debate-index-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .debate-index-card {
+    min-width: 0;
+    width: 100%;
+    padding: 1.25rem;
+    border: 1px solid rgba(17, 17, 17, 0.12);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #fff 0%, #f8fbfc 100%);
+    box-shadow: 0 10px 24px rgba(15, 50, 66, 0.06);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    cursor: pointer;
+  }
+
+  .debate-index-card:hover,
+  .debate-index-card:focus-visible {
+    transform: translateY(-4px);
+    border-color: rgba(31, 105, 136, 0.4);
+    box-shadow: 0 18px 36px rgba(15, 50, 66, 0.1);
+    outline: none;
+  }
+
+  .debate-index-card.is-active {
+    border-color: rgba(31, 105, 136, 0.55);
+    box-shadow: 0 18px 36px rgba(15, 50, 66, 0.14);
+  }
+
+  .debate-index-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .debate-index-icon {
+    width: 3rem;
+    height: 3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.9rem;
+    background: rgba(31, 105, 136, 0.12);
+    color: #1f6988;
+    flex: 0 0 auto;
+  }
+
+  .debate-index-icon svg {
+    width: 1.45rem;
+    height: 1.45rem;
+  }
+
+  .debate-index-phase {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #7b8791;
+  }
+
+  .debate-index-card-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #111;
+  }
+
+  .debate-index-card-text {
+    margin: 0;
+    color: #5f6b76;
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .debate-phase-section {
+    scroll-margin-top: 1.5rem;
+  }
+
+  @media (max-width: 991px) {
+    .debate-index-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 575px) {
+    .debate-index-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
+`) %>
+
+<header class="bg-dark text-white py-4 mb-4 shadow">
+  <div class="container">
+    <h1 class="mb-0 fw-bold">
+      <span class="text-info">Rethink</span> - AI Debate
+    </h1>
+    <p class="mb-0 text-secondary small">複数の AI エージェントが議論し、考えを深めます。</p>
+  </div>
+</header>
+
+<div class="pb-5">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="mb-4">
+        <label for="topic" class="form-label fw-semibold">議題・前提条件</label>
+        <textarea
+          id="topic"
+          class="form-control"
+          rows="3"
+          placeholder="例: 新しいプロダクトの UI 設計において、どちらのアプローチが優れているか"
+        ></textarea>
+      </div>
+
+      <div id="agentsContainer" class="row mb-3">
+        <div class="col-md-6 mb-4 agent-col" data-index="0">
+          <div class="border rounded p-3 agent-card" data-agent-index="0">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold text-primary mb-0">エージェントA</h6>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">主張</label>
+              <textarea class="form-control border-primary agent-claim" rows="2" placeholder="例: シンプルで運用しやすいデザインを採用する"></textarea>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">理由</label>
+              <textarea class="form-control border-primary agent-rationale" rows="2" placeholder="例: ユーザー調査ではシンプルな UI の定着率が高く、学習コストも低い"></textarea>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">前提条件</label>
+              <textarea class="form-control border-primary agent-preconditions" rows="2" placeholder="例: ターゲットユーザーは説明不要で直感的に使えることを重視する"></textarea>
+            </div>
+            <div class="mb-0">
+              <label class="form-label small fw-semibold">立場を支える経験・知識</label>
+              <textarea class="form-control border-primary agent-experience" rows="2" placeholder="例: 過去に担当したサービスで、複雑な UI よりもシンプルな設計が成果につながった"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-4 agent-col" data-index="1">
+          <div class="border rounded p-3 agent-card" data-agent-index="1">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold text-danger mb-0">エージェントB</h6>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">主張</label>
+              <textarea class="form-control border-danger agent-claim" rows="2" placeholder="例: 情報量を増やしてパワーユーザー向けの設計を採用する"></textarea>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">理由</label>
+              <textarea class="form-control border-danger agent-rationale" rows="2" placeholder="例: 上級ユーザーの 80% が一覧性と操作効率を重視している"></textarea>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">前提条件</label>
+              <textarea class="form-control border-danger agent-preconditions" rows="2" placeholder="例: 上級ユーザーの継続利用が成功の鍵になる"></textarea>
+            </div>
+            <div class="mb-0">
+              <label class="form-label small fw-semibold">立場を支える経験・知識</label>
+              <textarea class="form-control border-danger agent-experience" rows="2" placeholder="例: ヘビーユーザー向け機能の強化で成果が出た事例を参考にしている"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <button id="addAgentBtn" type="button" class="btn btn-outline-secondary">
+          + エージェントを追加
+        </button>
+        <span class="text-muted small ms-2">最大 6 人まで追加できます。</span>
+      </div>
+
+      <div class="mb-4">
+        <label for="maxTurns" class="form-label fw-semibold">フェーズ3の議論ターン数</label>
+        <div class="d-flex align-items-center gap-3">
+          <input
+            type="number"
+            id="maxTurns"
+            class="form-control"
+            style="width: 100px;"
+            value="2"
+            min="1"
+            max="2"
+          >
+          <span class="text-muted small">ターン数は 1〜2 の範囲で指定できます。</span>
+        </div>
+      </div>
+
+      <div class="d-grid d-md-flex">
+        <button id="startBtn" class="btn btn-dark btn-lg px-5">
+          議論開始
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <section id="summaryReportSection" class="d-none mb-4">
+    <div class="card border-success shadow-sm">
+      <div class="card-header bg-success text-white fw-semibold">
+        最終総括レポート
+      </div>
+      <div class="card-body">
+        <p id="summaryContent" class="mb-0" style="white-space: pre-wrap;"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="debateIndexSection" class="debate-index-section d-none">
+    <div class="debate-index-shell">
+      <div class="card-body p-4 p-lg-5">
+        <div class="debate-index-header">
+          <div>
+            <span class="debate-index-kicker">Debate Index</span>
+            <h2 class="debate-index-title">議論のプロセス</h2>
+            <p class="debate-index-text">見たいフェーズのカードを選ぶと、そのフェーズの議論の詳細を表示します。</p>
+          </div>
+        </div>
+
+        <div class="debate-index-grid">
+          <article class="debate-index-card" data-phase-index="0" role="button" tabindex="0" aria-label="フェーズ1を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v5A2.5 2.5 0 0 1 16.5 15H11l-3.8 3v-3H7.5A2.5 2.5 0 0 1 5 12.5v-5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M8.5 9.5h7M8.5 12h4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 1</span>
+            </div>
+            <h3 class="debate-index-card-title">意見表明</h3>
+            <p class="debate-index-card-text">初期主張と前提を整理し、議論の出発点を確認します。</p>
+          </article>
+
+          <article class="debate-index-card" data-phase-index="1" role="button" tabindex="0" aria-label="フェーズ2を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle cx="10.5" cy="10.5" r="4.5" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="m14 14 4.5 4.5M8.5 10.5h4M10.5 8.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 2</span>
+            </div>
+            <h3 class="debate-index-card-title">反論・情報取得</h3>
+            <p class="debate-index-card-text">相手の論点を分析し、根拠と反論の材料を集めます。</p>
+          </article>
+
+          <article class="debate-index-card" data-phase-index="2" role="button" tabindex="0" aria-label="フェーズ3を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M8 6H5.5A2.5 2.5 0 0 0 3 8.5v4A2.5 2.5 0 0 0 5.5 15H6v3l3.8-3H12.5A2.5 2.5 0 0 0 15 12.5v-1" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M16 6h2.5A2.5 2.5 0 0 1 21 8.5v4A2.5 2.5 0 0 1 18.5 15H18v3l-3.8-3H11.5A2.5 2.5 0 0 1 9 12.5v-4A2.5 2.5 0 0 1 11.5 6H14" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 3</span>
+            </div>
+            <h3 class="debate-index-card-title">サブ議題議論</h3>
+            <p class="debate-index-card-text">主要論点を分解し、論点ごとの議論を深掘りします。</p>
+          </article>
+
+          <article class="debate-index-card" data-phase-index="3" role="button" tabindex="0" aria-label="フェーズ4を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 4v4M12 16v4M6.5 7.5 9 10M15 14l2.5 2.5M4 12h4M16 12h4M6.5 16.5 9 14M15 10l2.5-2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.8"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 4</span>
+            </div>
+            <h3 class="debate-index-card-title">統合・結論</h3>
+            <p class="debate-index-card-text">最終ラウンドと総括に向けて、結論と統合視点を確認します。</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="resultArea" class="d-none">
+    <div class="mb-4 debate-phase-section" data-phase-index="0">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ1: 意見表明</h2>
+      <div class="accordion" id="phase1Accordion">
+        <div id="phase1Content"></div>
+      </div>
+    </div>
+
+    <div class="mb-4 debate-phase-section" data-phase-index="1">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ2: 反論・情報取得</h2>
+      <div class="accordion" id="phase2Accordion">
+        <div id="phase2Content"></div>
+      </div>
+    </div>
+
+    <div class="mb-4 debate-phase-section" data-phase-index="2">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ3: サブ議題議論</h2>
+      <div class="accordion" id="phase3Accordion">
+        <div id="phase3Content"></div>
+      </div>
+    </div>
+
+    <div class="mb-4 debate-phase-section" data-phase-index="3">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ4: 統合表明とまとめ</h2>
+      <div id="phase4Content"></div>
+    </div>
+  </div>
+</div>
+
+<% block('script').append('<script src="/js/main.js"></script>') %>
+<% block('script').append(`
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const resultArea = document.getElementById('resultArea');
+    const summarySection = document.getElementById('summaryReportSection');
+    const indexSection = document.getElementById('debateIndexSection');
+    const phaseSections = Array.from(resultArea?.querySelectorAll('.debate-phase-section') || []);
+    const indexCards = Array.from(indexSection?.querySelectorAll('.debate-index-card') || []);
+
+    if (!resultArea || !summarySection || !indexSection || !phaseSections.length) return;
+    if (document.getElementById('debatePhaseNav')) return;
+
+    const createPhaseNav = (navId) => {
+      const nav = document.createElement('div');
+      nav.id = navId;
+      nav.className = 'debate-detail-actions d-none';
+      nav.innerHTML = [
+        '<button data-action="prev" type="button" class="btn btn-outline-dark">前のフェーズへ</button>',
+        '<button data-action="index" type="button" class="btn btn-dark">目次へ戻る</button>',
+        '<button data-action="next" type="button" class="btn btn-outline-dark">次のフェーズへ</button>',
+      ].join('');
+      return nav;
+    };
+
+    const topNav = createPhaseNav('debatePhaseNav');
+    const bottomNav = createPhaseNav('debatePhaseNavBottom');
+    resultArea.insertAdjacentElement('afterbegin', topNav);
+    resultArea.insertAdjacentElement('beforeend', bottomNav);
+
+    let currentPhaseIndex = 0;
+
+    const hideAllPhaseSections = () => {
+      phaseSections.forEach((section) => {
+        section.classList.add('d-none');
+      });
+    };
+
+    const setActiveIndexCard = (phaseIndex) => {
+      indexCards.forEach((card) => {
+        const cardIndex = Number(card.dataset.phaseIndex);
+        card.classList.toggle('is-active', cardIndex === phaseIndex);
+      });
+    };
+
+    const syncResultSectionsVisibility = () => {
+      const shouldHide = resultArea.classList.contains('d-none');
+      summarySection.classList.toggle('d-none', shouldHide);
+      indexSection.classList.toggle('d-none', shouldHide);
+      topNav.classList.toggle('d-none', true);
+      bottomNav.classList.toggle('d-none', true);
+      hideAllPhaseSections();
+      setActiveIndexCard(-1);
+    };
+
+    const renderOverview = () => {
+      hideAllPhaseSections();
+      topNav.classList.add('d-none');
+      bottomNav.classList.add('d-none');
+      summarySection.classList.remove('d-none');
+      indexSection.classList.remove('d-none');
+      setActiveIndexCard(-1);
+      indexSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const openPhase = (phaseIndex) => {
+      const targetSection = phaseSections[phaseIndex];
+      if (!targetSection) return;
+
+      currentPhaseIndex = phaseIndex;
+      hideAllPhaseSections();
+      summarySection.classList.add('d-none');
+      indexSection.classList.add('d-none');
+      topNav.classList.remove('d-none');
+      bottomNav.classList.remove('d-none');
+      targetSection.classList.remove('d-none');
+
+      [topNav, bottomNav].forEach((nav) => {
+        nav.querySelector('[data-action="prev"]').classList.toggle('d-none', phaseIndex === 0);
+        nav.querySelector('[data-action="next"]').classList.toggle('d-none', phaseIndex === phaseSections.length - 1);
+      });
+
+      setActiveIndexCard(phaseIndex);
+      targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const handleNavClick = (event) => {
+      const action = event.target.closest('button')?.dataset.action;
+      if (!action) return;
+      if (action === 'prev' && currentPhaseIndex > 0) openPhase(currentPhaseIndex - 1);
+      if (action === 'next' && currentPhaseIndex < phaseSections.length - 1) openPhase(currentPhaseIndex + 1);
+      if (action === 'index') renderOverview();
+    };
+
+    topNav.addEventListener('click', handleNavClick);
+    bottomNav.addEventListener('click', handleNavClick);
+
+    indexCards.forEach((card) => {
+      const phaseIndex = Number(card.dataset.phaseIndex);
+      card.addEventListener('click', () => openPhase(phaseIndex));
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openPhase(phaseIndex);
+        }
+      });
+    });
+
+    syncResultSectionsVisibility();
+
+    const observer = new MutationObserver(() => {
+      if (resultArea.classList.contains('d-none')) {
+        syncResultSectionsVisibility();
+        return;
+      }
+      renderOverview();
+    });
+
+    observer.observe(resultArea, { attributes: true, attributeFilter: ['class'] });
+  });
+</script>
+`) %>
