@@ -34,6 +34,11 @@
     </div>
 </div>
 
+<div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+    <div class="spinner-border text-light mb-3" role="status"></div>
+    <p class="text-white fs-5">会話をもとにプロフィールを作成しています...</p>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
     // サーバとSocket.ioの接続を確立
@@ -116,6 +121,13 @@
             // aiの返答を会話履歴に追加
             history.push({ role: 'ai', text: data.reply });
 
+            // 終了条件 (いまここではgeminiが判断して、「インタビューを終了します」という文字が含まれた時)
+            if (data.reply.includes('インタビューを終了')) {
+                document.getElementById('sendBtn').disabled = true;
+                document.getElementById('endBtn').disabled = false;
+                document.getElementById('endAlert').style.display = 'block';
+            }
+
             turnCount++;
             if (turnCount >= maxTurns) {
                 const finishResponse = await fetch('/dialog/message', {
@@ -138,14 +150,6 @@
             document.getElementById('sendBtn').disabled = false;
             document.getElementById('messageInput').disabled = false;
         }
-        
-
-        // 終了条件 (いまここではgeminiが判断して、「インタビューを終了します」という文字が含まれた時)
-        if (data.reply.includes('インタビューを終了')) {
-            document.getElementById('sendBtn').disabled = true;
-            document.getElementById('endBtn').disabled = false;
-            document.getElementById('endAlert').style.display = 'block';
-        }
     });
 
     // エンターキーで送信を可能にする
@@ -158,7 +162,8 @@
     // 対話終了ボタンが押されたときの処理
     document.getElementById('endBtn').addEventListener('click', async () => {
         endBtn.disabled = true; 
-        endBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>処理中...'; 
+        endBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>処理中...';
+        document.getElementById('overlay').style.display = 'flex';  
 
         try {
             const response = await fetch('/dialog/profile', {

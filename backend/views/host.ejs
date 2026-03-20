@@ -82,4 +82,11 @@
         }
         socket.emit('start', roomId, topic);
     });
+
+    function copyUrl(id) {
+        const input = document.getElementById(id);
+        navigator.clipboard.writeText(input.value)
+            .then(() => alert('コピーしました'))
+            .catch(() => alert('コピーに失敗しました'));
+    }
 </script>
