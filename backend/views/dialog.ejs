@@ -34,6 +34,11 @@
     </div>
 </div>
 
+<div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+    <div class="spinner-border text-light mb-3" role="status"></div>
+    <p class="text-white fs-5">会話をもとにプロフィールを作成しています...</p>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
     // サーバとSocket.ioの接続を確立
@@ -44,6 +49,7 @@
     // 接続が完了したらサーバにgeminiセッションの初期化を依頼
     // initDialogイベントはserver.jsに記載あり
     socket.on('connect', () => {
+        socket.emit('joinDialog', '<%= roomId %>')
         socket.emit('initDialog', '<%= roomId %>');
     });
 
@@ -66,6 +72,9 @@
 
     // 会話履歴をフロント側で持つための配列
     const history = [];
+    // 往復回数制限のため
+    let turnCount = 0;
+    const maxTurns = 10; 
 
     // メッセージをチャット画面に追加する関数
     // senderがuserなら右側に青色背景、aiなら左側に灰色背景で表示
@@ -92,41 +101,89 @@
         const message = input.value.trim();
         if (!message) return;
 
+        document.getElementById('sendBtn').disabled = true;
+        document.getElementById('messageInput').disabled = true;
+
         addMessage(message, 'user');
         // userの入力を会話履歴に追加
         history.push({ role: 'user', text: message });
         input.value = '';
 
-        const response = await fetch('/dialog/message', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ socketId: socket.id, message })
-        });
+        try {
+            const response = await fetch('/dialog/message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ socketId: socket.id, message })
+            });
 
-        const data = await response.json();
-        addMessage(data.reply, 'ai');
-        // aiの返答を会話履歴に追加
-        history.push({ role: 'ai', text: data.reply });
+            const data = await response.json();
+            addMessage(data.reply, 'ai');
+            // aiの返答を会話履歴に追加
+            history.push({ role: 'ai', text: data.reply });
 
-        // 終了条件 (いまここではgeminiが判断して、「インタビューを終了します」という文字が含まれた時)
-        if (data.reply.includes('インタビューを終了します')) {
-            document.getElementById('sendBtn').disabled = true;
-            document.getElementById('endBtn').disabled = false;
-            document.getElementById('endAlert').style.display = 'block';
+            // 終了条件 (いまここではgeminiが判断して、「インタビューを終了します」という文字が含まれた時)
+            if (data.reply.includes('インタビューを終了')) {
+                document.getElementById('sendBtn').disabled = true;
+                document.getElementById('endBtn').disabled = false;
+                document.getElementById('endAlert').style.display = 'block';
+            }
+
+            turnCount++;
+            if (turnCount >= maxTurns) {
+                const finishResponse = await fetch('/dialog/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ socketId: socket.id, message: 'これまでの会話をもとに、インタビューを終了してください。' })
+                });
+                const finishData = await finishResponse.json();
+                addMessage(finishData.reply, 'ai');
+                history.push({ role: 'ai', text: finishData.reply });
+                document.getElementById('sendBtn').disabled = true;
+                document.getElementById('endBtn').disabled = false;
+                document.getElementById('endAlert').style.display = 'block';
+            }
+
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('messageInput').disabled = false; 
+        } catch (err) {
+            addMessage('エラーが発生しました。もう一度送信してください。', 'ai');
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('messageInput').disabled = false;
+        }
+    });
+
+    // エンターキーで送信を可能にする
+    document.getElementById('messageInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('sendBtn').click();
         }
     });
 
     // 対話終了ボタンが押されたときの処理
     document.getElementById('endBtn').addEventListener('click', async () => {
-        const response = await fetch('/dialog/profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ socketId: socket.id, history, roomId })
-        });
+        endBtn.disabled = true; 
+        endBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>処理中...';
+        document.getElementById('overlay').style.display = 'flex';  
 
-        const data = await response.json();
-        // 待機画面に遷移
-        window.location.href = '/waiting/<%= roomId %><%= isHost ? "/host" : "" %>';
+        try {
+            const response = await fetch('/dialog/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ socketId: socket.id, history, roomId })
+            });
+
+            const data = await response.json();
+            // 待機画面に遷移
+            window.location.href = '/waiting/<%= roomId %><%= isHost ? "/host" : "" %>';
+        } catch (err) {
+            endBtn.disabled = false;
+            endBtn.innerHTML = '対話を終了する';
+            alert('エラーが発生しました。もう一度試してください。');
+        }
     })
      
+    // 参加者離脱時の処理、内容を表示してもよいがここではコンソールに出すだけにした
+    socket.on('participantLeft', () => {
+        console.log('参加者が離脱しました');
+    });
 </script>

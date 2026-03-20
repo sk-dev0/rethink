@@ -1,7 +1,8 @@
 <% layout('layout/boilerplates') %>
 <% block('style').append('<link href="/css/debate.css" rel="stylesheet">') %>
 
-<!-- ヘッダー -->
+<!--
+<!- ヘッダー ->
 <header class="bg-dark text-white py-4 mb-4 shadow">
   <div class="container">
     <h1 class="mb-0 fw-bold">
@@ -10,6 +11,7 @@
     <p class="mb-0 text-secondary small">複数のアイデアをAIが4フェーズで議論し、深く考察します</p>
   </div>
 </header>
+-->
 
 <!-- プロフィールから自動生成されたエージェント -->
 <div id="profilesContainer" class="row mb-3">
@@ -24,7 +26,7 @@
                 <i class="bi bi-chat-square-text me-2"></i>議題
             </div>
             <div class="card-body py-3">
-                <h5 class="fw-bold mb-0"><%= typeof topic !== 'undefined' ? topic : '' %></h5>
+                <div class="fw-bold mb-0" id="topicDisplay"></div>
             </div>
         </div>
         <input type="hidden" id="topic" value="<%= typeof topic !== 'undefined' ? topic : '' %>">
@@ -122,3 +124,13 @@
 </div>
 
 <% block('script').append('<script src="/js/main.js"></script>') %>
+<script>
+  const topicRaw = document.getElementById('topic').value;
+  const lines = topicRaw.split('・').filter(l => l.trim());
+  const display = document.getElementById('topicDisplay');
+  display.innerHTML = lines.map((line, i) => 
+      i === 0 
+          ? `<p class="mb-1">${line.trim()}</p>`
+          : `<p class="mb-0 text-muted small">・${line.trim()}</p>`
+  ).join('');
+</script>
