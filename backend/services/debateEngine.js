@@ -319,6 +319,7 @@ const runDebate = async (topic, agents, maxTurns) => {
             assumptionDebateLog.push({
                 id: assumption.id,
                 content: assumption.content,
+                dependsOn: assumption.dependsOn || [],
                 invalidationScore,
                 invalidated,
                 gammaUtterances,
