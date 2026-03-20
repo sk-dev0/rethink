@@ -601,7 +601,7 @@ const startDebate = async () => {
         const res = await fetch('/api/debate/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic, agents, maxTurns }),
+            body: JSON.stringify({ topic, agents, maxTurns, roomId: window.roomId }),
         });
 
         if (!res.ok) {
