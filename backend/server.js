@@ -15,8 +15,6 @@ const io = new Server(server);
 
 // 参加人数を管理するためのオブジェクト
 const roomTotals = {};
-// ルームごとのプロフィールを管理するオブジェクト
-const roomProfiles = {};
 
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
@@ -61,10 +59,9 @@ app.post('/dialog/message', async (req, res) => {
 });
 
 app.post('/dialog/profile', async (req, res) => {
-    const { socketId, history, roomId } = req.body;
+    const { socketId, history } = req.body;
     const profile = await generateProfile(socketId, history);
-    if (!roomProfiles[roomId]) roomProfiles[roomId] = [];
-    roomProfiles[roomId].push(profile);
+    req.session.profile = profile;
     //ユーザーが増え続ける限り、チャットのキャッシュが残り続けるため削除する。
     deleteSession(socketId);
     res.json({ profile });
@@ -90,24 +87,10 @@ app.get('/index', (req, res) => {
     res.render('index');
 });
 
-// ここで生成したプロフィールを渡すようにした
-app.get('/debate/:roomId', (req, res) => {
-    const roomId = req.params.roomId;
-    const profiles = roomProfiles[roomId] || [];
-    res.render('debate', { profiles });
-});
-
 //AI同士の議論フェーズ画面（現状まだ独立している）
 app.get('/debate', (req, res) => {
     res.render('debate');
 });
-
-// debate2.ejs をブラウザで直接確認するための表示ルート
-app.get('/debate2', (req, res) => {
-    res.render('debate2');
-});
-
-// コメント: debate3 の単独確認ルートは不要になったため削除
 
 // AI Debate API
 const debateRoutes = require('./routes/debate');
@@ -147,7 +130,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('startDiscussion', (roomId) => {
-        io.to(roomId + '-waiting').emit('redirectToDiscussion', `/debate/${roomId}`);
+        io.to(roomId + '-waiting').emit('redirectToDiscussion', '/discussion');
     })
 
     socket.on('initDialog', async () => {
