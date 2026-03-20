@@ -16,11 +16,28 @@
         </div>
     </div>
 
+    <div class="card shadow mb-4 border-success">
+        <div class="card-body p-4">
+            <h5 class="card-title text-success"><i class="bi bi-people me-2"></i>参加者招待URL</h5>
+            <p class="card-text text-muted small">このURLを参加者に共有してください</p>
+            <input type="text" class="form-control mb-2" id="guestUrl" value="http://localhost:3000/room/<%= roomId %>" readonly>
+            <button class="btn btn-success w-100" onclick="copyUrl('guestUrl')"><i class="bi bi-clipboard me-1"></i>URLをコピー</button>
+        </div>
+    </div>
+
     <div class="card shadow-sm mb-4 border-primary">
         <div class="card-body p-4">
             <h5 class="card-title text-primary"><i class="bi bi-people me-2"></i>参加状況</h5>
             <p class="card-text text-muted small">現在ロビーに参加している人数です</p>
             <h2 class="text-center fw-bold"><span id="count">0</span><span class="fs-5 text-muted"> 人が参加中</span></h2>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h5 class="card-title"><i class="bi bi-chat-square-text me-2 text-primary"></i>議題・前提条件を設定</h5>
+            <p class="card-text text-muted small">議題と前提条件をまとめて入力してください</p>
+            <textarea class="form-control" id="topicInput" rows="6" placeholder="例: リモートワークは原則化すべきか&#10;&#10;前提条件:&#10;・対象はデスクワーク中心の職種&#10;・技術的インフラは整っているものとする"></textarea>
         </div>
     </div>
 
@@ -38,10 +55,12 @@
     const socket = io();
     const roomId = '<%= roomId %>';
 
-    socket.emit('joinRoom', roomId);
+    socket.on('connect', () => {
+        socket.emit('joinRoom', roomId);
+    });
 
-    socket.on('updateCount', (count) => {
-        document.getElementById('count').textContent = count;
+    socket.on('updateCount', (count, max) => {
+        document.getElementById('count').textContent = count + ' / ' + max;
     });
 
     // dialogページに遷移する際にソケットIDとルームIDを渡す
@@ -50,6 +69,24 @@
     });
 
     document.getElementById('startBtn').addEventListener('click', () => {
-        socket.emit('start', roomId);
+        const topic = document.getElementById('topicInput').value.trim();
+        if (!topic) {
+            alert('議題・前提条件を入力してください');
+            return;
+        }
+        const countText = document.getElementById('count').textContent;
+        const current = parseInt(countText.split('/')[0]);
+        if (current < 2) {
+            alert('参加者が2人以上必要です');
+            return;
+        }
+        socket.emit('start', roomId, topic);
     });
+
+    function copyUrl(id) {
+        const input = document.getElementById(id);
+        navigator.clipboard.writeText(input.value)
+            .then(() => alert('コピーしました'))
+            .catch(() => alert('コピーに失敗しました'));
+    }
 </script>

@@ -17,6 +17,16 @@ const io = new Server(server);
 const roomTotals = {};
 // ルームごとのプロフィールを管理するオブジェクト
 const roomProfiles = {};
+// 議題・テーマ管理のためのオブジェクト
+const roomThemes = {};
+// 参加人数を管理するためのオブジェクト
+const roomMaxParticipants = {};
+// 途中離脱検知用のオブジェクト
+const socketRooms = {}; 
+// 完了済を検知する
+const completedSockets = new Set(); 
+// 複数ホストを防止するためのオブジェクト
+const roomHosted = {};
 
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
@@ -37,6 +47,12 @@ app.get('/', (req, res) => {
 
 app.get('/room/:roomId/host', (req, res) => {
     const roomId = req.params.roomId;
+    if (roomHosted[roomId]) {
+        return res.redirect('/room/' + roomId);
+    }
+    roomHosted[roomId] = true;
+    const max = parseInt(req.query.max) || 4;
+    roomMaxParticipants[roomId] = max;
     res.render('host', { roomId });
 });
 
@@ -65,6 +81,7 @@ app.post('/dialog/profile', async (req, res) => {
     const profile = await generateProfile(socketId, history);
     if (!roomProfiles[roomId]) roomProfiles[roomId] = [];
     roomProfiles[roomId].push(profile);
+    completedSockets.add(socketId);
     //ユーザーが増え続ける限り、チャットのキャッシュが残り続けるため削除する。
     deleteSession(socketId);
     res.json({ profile });
@@ -74,6 +91,9 @@ app.post('/dialog/profile', async (req, res) => {
 
 app.get('/waiting/:roomId/host', (req, res) => {
     const roomId = req.params.roomId;
+    if (!roomHosted[roomId]) {
+        return res.redirect('/waiting/' + roomId);
+    }
     res.render('waiting', { roomId, isHost: true });
 });
 
@@ -90,11 +110,48 @@ app.get('/index', (req, res) => {
     res.render('index');
 });
 
+// テスト用ルート
+app.get('/debug/debate', (req, res) => {
+    const dummyProfiles = [
+        {
+            socketId: 'dummy-1',
+            core_claim: '授業へのスマホ持ち込みを認めるべきだ',
+            rationale: '調べ学習や辞書代わりとして活用でき、学習効率が上がる',
+            preconditions: '適切なルールを設けた上での使用を前提とする',
+            experience: '実際に調べ学習でスマホを使った授業の方が理解度が高かった'
+        },
+        {
+            socketId: 'dummy-2',
+            core_claim: '授業へのスマホ持ち込みは認めるべきでない',
+            rationale: 'SNSやゲームへの誘惑があり、集中力が低下する',
+            preconditions: '自己管理が難しい年齢層を対象とした場合に限る',
+            experience: 'スマホを持ち込んだクラスでは授業中の私語や脱線が増えた'
+        },
+        {
+            socketId: 'dummy-3',
+            core_claim: '授業の内容や状況に応じて柔軟に判断すべきだ',
+            rationale: '一律禁止や許可より、場面に応じた使い分けが現実的である',
+            preconditions: '教師と生徒が使用ルールについて合意形成できることが前提',
+            experience: '実際に教科によってスマホの有用性が大きく異なると感じた'
+        },
+        {
+            socketId: 'dummy-4',
+            core_claim: '保護者や地域社会も含めた幅広い議論が必要だ',
+            rationale: 'スマホの使用は学校だけの問題ではなく家庭環境にも依存するため',
+            preconditions: '学校単独での決定ではなく保護者との合意が必要である',
+            experience: '保護者間でスマホの使用方針が異なり学校のルールと家庭のルールが矛盾することを経験した'
+        }
+    ];
+    const topic = '授業にスマホの使用を認めるべきか';
+    res.render('debate', { profiles: dummyProfiles, topic });
+});
+
 // ここで生成したプロフィールを渡すようにした
 app.get('/debate/:roomId', (req, res) => {
     const roomId = req.params.roomId;
     const profiles = roomProfiles[roomId] || [];
-    res.render('debate', { profiles });
+    const topic = roomThemes[roomId] || '';
+    res.render('debate', { profiles, topic });
 });
 
 //AI同士の議論フェーズ画面（現状まだ独立している）
@@ -112,21 +169,43 @@ const debateRoutes = require('./routes/debate');
 app.use('/api/debate', debateRoutes);
 
 app.use((req, res) => {
-    res.send('404ページ');
+    res.status(404).send(`
+        <div style="font-family: sans-serif; text-align: center; margin-top: 100px;">
+            <div style="display: inline-block; padding: 40px 60px; border: 2px solid #dee2e6; border-radius: 12px;">
+                <h1 style="font-size: 72px; margin: 0;">404</h1>
+                <h2>ページが見つかりません</h2>
+                <p style="color: gray;">正しいURLでやり直してください。</p>
+                <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 24px; background: #0d6efd; color: white; border-radius: 8px; text-decoration: none;">トップに戻る</a>
+            </div>
+        </div>
+    `);
 });
 
 io.on('connection', (socket) => {
     console.log('接続されました:', socket.id);
 
     socket.on('joinRoom', (roomId) => {
+        // 参加人数を渡し、設定した人数を超えていたら受け付けないようにする
+        const currentSize = io.sockets.adapter.rooms.get(roomId)?.size || 0;
+        const max = roomMaxParticipants[roomId] || 4;
+        
+        if (currentSize >= max) {
+            socket.emit('roomFull');
+            return;
+        }
+
         socket.join(roomId);
         console.log(`${socket.id}がルーム ${roomId} に参加しました`);
+        // 現在のフェーズを設定する
+        socketRooms[socket.id] = { roomId, phase: 'lobby' };
 
-        io.to(roomId).emit('updateCount', io.sockets.adapter.rooms.get(roomId).size);
+        io.to(roomId).emit('updateCount', io.sockets.adapter.rooms.get(roomId).size, max);
     });
 
     socket.on('joinWaiting', (roomId) => {
+        // phaseをwaitingに変更
         socket.join(roomId + '-waiting');
+        socketRooms[socket.id] = { roomId, phase: 'waiting' };
         console.log(`${socket.id}がルーム ${roomId} に参加しました`);
 
         // ルームの参加人数を取得、いなければ0とする
@@ -137,10 +216,12 @@ io.on('connection', (socket) => {
         io.to(roomId + '-waiting').emit('updateWaitingCount', count, total);
     })
 
-    socket.on('start', (roomId) => {
+    socket.on('start', (roomId, topic) => {
         // roomIdとその人数を記録しておく
         const roomSize = io.sockets.adapter.rooms.get(roomId)?.size || 0;
         roomTotals[roomId] = roomSize;
+        roomThemes[roomId] = topic;
+
         io.to(roomId).emit('redirect', '/dialog');
     });
 
@@ -148,17 +229,54 @@ io.on('connection', (socket) => {
         io.to(roomId + '-waiting').emit('redirectToDiscussion', `/debate/${roomId}`);
     })
 
-    socket.on('initDialog', async () => {
-        // 第2引数のテーマは現在は仮のテーマにしている
-        await createSession(socket.id, '夜ご飯は何にするか');
+    socket.on('initDialog', async (roomId) => {
+        const topic = roomThemes[roomId] || '夜ご飯は何にするか';
+        await createSession(socket.id, topic);
         // 対話を始めるためのイベント
         socket.emit('dialogReady');
+    });
+
+    socket.on('joinDialog', (roomId) => {
+        socketRooms[socket.id] = { roomId, phase: 'dialog' };
     });
 
     socket.on('disconnect', () => {
         console.log('切断されました:', socket.id);
         //インタビュー途中で切断した場合も会話キャッシュを消すように
         deleteSession(socket.id); 
+
+        const info = socketRooms[socket.id];
+        if (!info) return;
+
+        const { roomId, phase } = info;
+        delete socketRooms[socket.id];
+
+        if (phase === 'dialog') {
+            if (completedSockets.has(socket.id)) {
+                completedSockets.delete(socket.id);
+            } else {
+                // 本当の離脱
+                if (roomTotals[roomId] && roomTotals[roomId] > 0) {
+                    roomTotals[roomId]--;
+                }
+                const waitingRoom = io.sockets.adapter.rooms.get(roomId + '-waiting');
+                const count = waitingRoom ? waitingRoom.size : 0;
+                const total = roomTotals[roomId] || 0;
+                io.to(roomId + '-waiting').emit('updateWaitingCount', count, total);
+                console.log(`離脱検知: roomId=${roomId}, phase=${phase}, total=${total}`);
+            }
+        }
+
+        if (phase === 'waiting') {
+            if (roomTotals[roomId] && roomTotals[roomId] > 0) {
+                roomTotals[roomId]--;
+            }
+            const waitingRoom = io.sockets.adapter.rooms.get(roomId + '-waiting');
+            const count = waitingRoom ? waitingRoom.size : 0;
+            const total = roomTotals[roomId] || 0;
+            io.to(roomId + '-waiting').emit('updateWaitingCount', count, total);
+            console.log(`離脱検知: roomId=${roomId}, phase=${phase}, total=${total}`);
+        }
     });
 });
 

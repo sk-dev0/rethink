@@ -1,9 +1,26 @@
 <% layout('layout/boilerplates') %>
 
 <div class="container mt-5" style="max-width: 600px;">
-    <div class="text-center mb-5">
-        <h1>DebateAI</h1>
-        <p class="text-muted">AIが議論を行い人間の議論への橋渡しをします。ルームを作成して参加者を招待してください</p>
+    <div class="text-center mb-5 py-5 bg-dark text-white rounded-3">
+        <h2 class="fw-bold mb-3">あなたの意見を、AIが議論に変えます。</h2>
+        <p class="text-white-50">
+            参加者はAIと対話し、テーマに対する自分の考えを整理します。<br>
+            集まった意見をもとに、AIが多角的な視点から議論を展開。<br>
+            人間が本質的な議論に集中できる場をつくります。
+        </p>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body p-4">
+            <h5 class="card-title"><i class="bi bi-people-fill me-2 text-primary"></i>参加人数を設定</h5>
+            <p class="card-text text-muted small">URLを共有する前に参加人数を設定してください</p>
+            <div class="d-flex gap-2 justify-content-center mt-3">
+                <% [2,3,4,5,6].forEach(n => { %>
+                <input type="radio" class="btn-check" name="maxParticipants" id="p<%= n %>" value="<%= n %>" <%= n === 4 ? 'checked' : '' %>>
+                <label class="btn btn-outline-primary" for="p<%= n %>"><%= n %>人</label>
+                <% }) %>
+            </div>
+        </div>
     </div>
 
     <div class="card shadow mb-4 border-primary">
@@ -11,7 +28,7 @@
             <h5 class="card-title text-primary"><i class="bi bi-person-gear me-2"></i>ホスト用URL</h5>
             <p class="card-text text-muted small">このURLはあなただけが使用してください</p>
             <input type="text" class="form-control mb-2" id="hostUrl" value="http://localhost:3000/room/<%= roomId %>/host" readonly>
-            <button class="btn btn-primary w-100" onclick="copyUrl('hostUrl')"><i class="bi bi-clipboard me-1"></i>URLをコピー</button>
+            <button class="btn btn-primary w-100" onclick="goHostUrl()"><i class="bi bi-box-arrow-in-right me-1"></i>ホスト画面に移動</button>
         </div>
     </div>
 
@@ -34,5 +51,12 @@
         const input = document.getElementById(id);
         navigator.clipboard.writeText(input.value);
         alert('コピーしました！');
+    }
+
+    function goHostUrl() {
+        const input = document.getElementById('hostUrl');
+        // ホスト画面に遷移する際に人数の情報を渡す
+        const max = document.querySelector('input[name="maxParticipants"]:checked').value;
+        window.location.href = input.value + '?max=' + max;
     }
 </script>

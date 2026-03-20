@@ -32,9 +32,7 @@
         <div class="card-body p-4 text-center">
             <h5 class="card-title"><i class="bi bi-hourglass-split me-2 text-warning"></i>開始待ち</h5>
             <p class="card-text text-muted small">全員完了後、ホストが議論を開始します</p>
-            <div class="spinner-border text-primary mt-2" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+            <%- partial('partials/waveWaiting') %>
         </div>
     </div>
     <% } %>
@@ -59,12 +57,20 @@
         document.getElementById('count').textContent = count + '/' + total;
         if (count >= total && total > 0) {
             const startBtn = document.getElementById('startBtn');
-            if (startBtn) startBtn.disabled = false;
+            if (startBtn) {
+                startBtn.disabled = false;
+                alert('全員の対話が完了しました！議論を開始できます。'); 
+            }
         }
     });
 
     // 議論フェーズへ遷移する
     socket.on('redirectToDiscussion', (url) => {
         window.location.href = url;
+    });
+
+    // 参加者離脱時の処理、内容を表示してもよいがここではコンソールに出すだけにした
+    socket.on('participantLeft', () => {
+        console.log('参加者が離脱しました');
     });
 </script>

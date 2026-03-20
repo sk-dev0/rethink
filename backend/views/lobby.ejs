@@ -28,9 +28,7 @@
         <div class="card-body p-4 text-center">
             <h5 class="card-title"><i class="bi bi-hourglass-split me-2 text-warning"></i>開始待ち</h5>
             <p class="card-text text-muted small">ホストが開始ボタンを押すと対話フェーズに移行します</p>
-            <div class="spinner-border text-primary mt-2" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+            <%- partial('partials/waveWaiting') %>
         </div>
     </div>
 </div>
@@ -40,14 +38,22 @@
     const socket = io();
     const roomId = '<%= roomId %>';
 
-    socket.emit('joinRoom', roomId);
+    socket.on('connect', () => {
+        socket.emit('joinRoom', roomId);
+    });
 
-    socket.on('updateCount', (count) => {
-        document.getElementById('count').textContent = count;
+    socket.on('updateCount', (count, max) => {
+        document.getElementById('count').textContent = count + ' / ' + max;
     });
 
     // dialogページに遷移する際にソケットIDとルームIDを渡す
     socket.on('redirect', (url) => {
         window.location.href = url + '?socketId=' + socket.id + '&roomId=' + '<%= roomId %>';
+    });
+
+    // ルームが満員の時の処理
+    socket.on('roomFull', () => {
+        alert('このルームは満員です。参加できません。');
+        window.location.href = '/';
     });
 </script>
