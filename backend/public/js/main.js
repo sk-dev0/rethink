@@ -257,8 +257,7 @@ const renderPhase3 = (phase3) => {
                     utterancesHtml,
                     ti === 0
                 );
-            }).join('') +
-            '</div>';
+            }).join('')}</div>`;
 
         // ボタンのテキストにバッジHTMLを含めたいのでescを使わずinnerHTMLとして挿入
         const itemId = `p3_${i}`;
@@ -367,6 +366,7 @@ ${utterancesHtml}`;
    ズーム: Ctrl+スクロール（マウス位置中心）
    縮小限: 横スクロールが消えるまで（SVG幅 ≤ コンテナ幅）
    拡大限: デフォルトスケールの2倍
+============================= */
 
 /**
  * containerId → { naturalW, naturalH, defaultScale, currentScale,
