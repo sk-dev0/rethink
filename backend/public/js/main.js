@@ -482,7 +482,7 @@ const renderMindmap = async (containerId, dlBtnId, diagramCode) => {
         e.preventDefault();
 
         const oldScale = currentScale;
-        const factor   = e.deltaY > 0 ? 1 / 1.1 : 1.1;
+        const factor   = e.deltaY > 0 ? 1 / 1.03 : 1.03;
         const newScale = Math.max(minScale, Math.min(maxScale, oldScale * factor));
         if (newScale === oldScale) return;
 

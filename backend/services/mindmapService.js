@@ -15,6 +15,7 @@
 const { callGeminiWithRetry } = require('./geminiClient');
 const {
     MINDMAP_LABEL_MAX_CHARS,
+    MINDMAP_REBUTTAL_MAX_CHARS,
     MINDMAP_SUBTOPIC_MAX_CHARS,
     MINDMAP_INTEGRATION_MAX_CHARS,
 } = require('./constants');
@@ -31,6 +32,7 @@ const {
  */
 const getCharLimit = (type) => ({
     label:       MINDMAP_LABEL_MAX_CHARS,
+    rebuttal:    MINDMAP_REBUTTAL_MAX_CHARS,
     subtopic:    MINDMAP_SUBTOPIC_MAX_CHARS,
     integration: MINDMAP_INTEGRATION_MAX_CHARS,
 })[type] ?? MINDMAP_LABEL_MAX_CHARS;
@@ -75,8 +77,8 @@ const createGraphBuilder = () => {
 // ============================================================
 
 /**
- * 最終総括テキストを3セクションに分割（3段階フォールバック付き）
- * @returns {{ settled: string, compromise: string, remaining: string }}
+ * 最終総括テキストを4セクションに分割（3段階フォールバック付き）
+ * @returns {{ settled: string, compromise: string, remaining: string, actions: string }}
  */
 const parseFinalSummary = (text) => {
     const parts = text.split(/見出し[1-9][：:]/);
@@ -90,21 +92,56 @@ const parseFinalSummary = (text) => {
     let settled    = extractContent(parts[1]);
     let compromise = extractContent(parts[2]);
     let remaining  = extractContent(parts[3]);
+    let actions    = extractContent(parts[4]);
 
     if (!settled)
-        settled    = text.match(/解決済み争点[^\n]*\n([\s\S]*?)(?=妥協|残存|人間が|$)/)?.[1]?.trim().slice(0, 500) || '';
+        settled    = text.match(/解決済み争点[^\n]*\n([\s\S]*?)(?=妥協|残存|人間が|推奨|$)/)?.[1]?.trim().slice(0, 500) || '';
     if (!compromise)
-        compromise = text.match(/妥協[^\n]*\n([\s\S]*?)(?=残存|人間が|$)/)?.[1]?.trim().slice(0, 500) || '';
+        compromise = text.match(/妥協[^\n]*\n([\s\S]*?)(?=残存|人間が|推奨|$)/)?.[1]?.trim().slice(0, 500) || '';
     if (!remaining)
-        remaining  = text.match(/残存[^\n]*\n([\s\S]*?)$|人間が[^\n]*\n([\s\S]*?)$/)?.[1]?.trim().slice(0, 500) || '';
+        remaining  = text.match(/残存[^\n]*\n([\s\S]*?)(?=推奨|人間が最終|$)/)?.[1]?.trim().slice(0, 500) || '';
+    if (!remaining)
+        remaining  = text.match(/人間が[^\n]*\n([\s\S]*?)(?=推奨|$)/)?.[1]?.trim().slice(0, 500) || '';
+    if (!actions)
+        actions    = text.match(/推奨アクション[^\n]*\n([\s\S]*?)$/)?.[1]?.trim().slice(0, 500) || '';
 
     if (!settled && !compromise && !remaining && text.trim()) {
-        const chunk = Math.ceil(text.length / 3);
+        const chunk = Math.ceil(text.length / 4);
         settled    = text.slice(0, chunk).trim();
         compromise = text.slice(chunk, chunk * 2).trim();
-        remaining  = text.slice(chunk * 2).trim();
+        remaining  = text.slice(chunk * 2, chunk * 3).trim();
+        actions    = text.slice(chunk * 3).trim();
     }
-    return { settled, compromise, remaining };
+    return { settled, compromise, remaining, actions };
+};
+
+/**
+ * 推奨アクションセクションから具体的なアクション項目を Gemini で抽出
+ * @param {string} actionsText
+ * @returns {Promise<string[]>}
+ */
+const extractActionPoints = async (actionsText) => {
+    if (!actionsText) return [];
+    const limit = getCharLimit('label');
+
+    const prompt =
+`以下の「推奨アクション」セクションを読み，各アクション項目を${limit}字以内の名詞句で抽出せよ。
+「誰が何をするか」が一目でわかる具体的な表現にすること。説明文・導入文は不可。
+必ずJSON配列形式のみで返すこと。コードブロック不要。最大5件まで。
+
+${actionsText.slice(0, 600)}
+
+出力例: ["PMがユーザーテスト実施","エンジニアがプロト開発","UXチームが調査設計"]`;
+
+    const raw = await callGeminiWithRetry([{ role: 'user', parts: [{ text: prompt }] }]);
+    const parsed = parseJsonResponse(raw);
+    if (Array.isArray(parsed)) return parsed.slice(0, 5);
+
+    // フォールバック: 文単位で分割
+    return (actionsText || '').split(/[。\n]/)
+        .map(s => s.trim())
+        .filter(s => s.length > 4 && s.length <= limit)
+        .slice(0, 5);
 };
 
 /**
@@ -159,20 +196,19 @@ const extractSubtopicSummaries = async (phase3) => {
     const limit = getCharLimit('subtopic');
 
     const discussions = phase3.map((r, i) => {
-        const lastTurn  = r.discussionLog[r.discussionLog.length - 1];
-        const utterances = lastTurn?.utterances || [];
-        const text = utterances.map(u => `${u.label}: ${u.text.slice(0, 150)}`).join('\n');
+        const allUtterances = (r.discussionLog || []).flatMap(turn => turn.utterances || []);
+        const text = allUtterances.map(u => `${u.label}: ${u.text.slice(0, 150)}`).join('\n');
         return `[${i}] サブ議題:${r.subTopic.title}\n${text || '（発言なし）'}`;
     });
 
     const prompt =
-`以下のサブ議題ごとの議論（最終ターン）を読み，各サブ議題での議論内容を${limit}字以内の日本語で要約せよ。
-"〇〇と〇〇が対立"や"〇〇の方向で概ね合意"のような具体的な内容にすること。説明文・導入文は不可。
+`以下のサブ議題ごとの全議論を読み，各サブ議題で「何が明らかになったか・どのような結論や収束点が浮かび上がったか」を${limit}字以内の日本語で要約せよ。
+対立の羅列ではなく，議論の到達点・重要な発見・方向性の絞り込みを優先すること。説明文・導入文は不可。
 必ずJSON配列形式のみを出力せよ。コードブロック不要。入力と同じ順序・個数で返すこと。
 
-${discussions.map(d => d.slice(0, 500)).join('\n\n')}
+${discussions.map(d => d.slice(0, 800)).join('\n\n')}
 
-出力例（2件）: ["UIとコストのトレードオフを中心に議論", "機能絞り込みの方向で概ね合意"]`;
+出力例（2件）: ["段階リリースで双方が合意", "コスト優先の方針が浮上"]`;
 
     const raw = await callGeminiWithRetry([{ role: 'user', parts: [{ text: prompt }] }]);
     const parsed = parseJsonResponse(raw);
@@ -182,13 +218,13 @@ ${discussions.map(d => d.slice(0, 500)).join('\n\n')}
 };
 
 /**
- * 各サブ議題に最も意味的に近い反論インデックスを Gemini でマッチング
- * マッチしない場合は -1（= n0 直結）
- * @returns {Promise<number[]>} phase3 と同順の rebuttal インデックス配列
+ * 各サブ議題に関連する反論インデックス群を Gemini でマッチング
+ * 複数の反論が関連する場合はすべて返す。対応なしは空配列（= n0 直結）
+ * @returns {Promise<number[][]>} phase3 と同順の rebuttal インデックス配列の配列
  */
 const matchRebuttalToSubtopics = async (rebuttals, phase3) => {
     if (rebuttals.length === 0 || phase3.length === 0)
-        return phase3.map(() => -1);
+        return phase3.map(() => []);
 
     const rebList = rebuttals.map((r, i) =>
         `[${i}] ${r.attacker}→${r.defender}: ${r.text.slice(0, 100)}`
@@ -198,9 +234,9 @@ const matchRebuttalToSubtopics = async (rebuttals, phase3) => {
     ).join('\n');
 
     const prompt =
-`以下の反論リストとサブ議題リストを照合し，各サブ議題に最も内容が近い反論のインデックスを答えよ。
-対応する反論がない・関連が薄い場合は -1 を返すこと。
-必ずJSON配列形式のみを出力せよ。コードブロック不要。サブ議題と同じ順序・個数で返すこと。
+`以下の反論リストとサブ議題リストを照合し，各サブ議題に関連する反論のインデックスをすべて答えよ。
+複数の反論が関連する場合はすべて含めること。対応する反論がない場合は空配列 [] を返すこと。
+必ずJSON形式（配列の配列）のみを出力せよ。コードブロック不要。サブ議題と同じ順序・個数で返すこと。
 
 【反論リスト】
 ${rebList}
@@ -208,17 +244,20 @@ ${rebList}
 【サブ議題リスト】
 ${subList}
 
-出力例（サブ議題3件）: [0, 2, -1]`;
+出力例（サブ議題3件）: [[0, 1], [2], []]`;
 
     const raw = await callGeminiWithRetry([{ role: 'user', parts: [{ text: prompt }] }]);
     const parsed = parseJsonResponse(raw);
     if (Array.isArray(parsed) && parsed.length === phase3.length) {
-        return parsed.map(idx =>
-            typeof idx === 'number' && idx >= 0 && idx < rebuttals.length ? idx : -1
-        );
+        return parsed.map(arr => {
+            if (!Array.isArray(arr)) return [];
+            return arr.filter(idx =>
+                typeof idx === 'number' && idx >= 0 && idx < rebuttals.length
+            );
+        });
     }
-    // フォールバック: modulo接続
-    return phase3.map((_, i) => i % rebuttals.length);
+    // フォールバック: modulo接続（各サブ議題に1件ずつ）
+    return phase3.map((_, i) => [i % rebuttals.length]);
 };
 
 /**
@@ -238,38 +277,43 @@ const extractIntegrationStructure = async (agents, turn1Data, turn2Data) => {
     const items = agents.map((agent, i) => {
         const t1 = turn1Data.find(u => u.label === agent.label)?.text || '';
         const t2 = turn2Data.find(u => u.label === agent.label)?.text || '';
-        return `[${i}] ${agent.label}\n統合表明1: ${t1.slice(0, 400)}\n統合表明2: ${t2.slice(0, 400)}`;
+        return `[${i}] ${agent.label}\n=== 統合表明1 ===\n${t1}\n=== 統合表明2 ===\n${t2}`;
     });
 
     const prompt =
-`以下のエージェントごとの統合表明1と統合表明2を読み，各エージェントについて以下6項目を${limit}字以内で抽出せよ。
-maintain:   統合表明1で「維持・堅持している主張」を具体的に
-concede:    統合表明1で「譲歩・妥協している点」を具体的に
-conflict:   統合表明1で「残存する対立点」を具体的に
-t2_maintain: 統合表明2での「維持点のその後の展開・変化」
-t2_concede:  統合表明2での「譲歩点のその後の展開・変化」
-t2_conflict: 統合表明2での「残存対立点のその後の動向」
+`以下のエージェントごとの統合表明1・2を読み，各エージェントについて下記6項目を${limit}字以内の日本語で抽出せよ。
 
-説明文・導入文は不可。パッと見てわかる具体的な言葉にすること。
-必ずJSON配列形式のみを出力。コードブロック不要。入力と同じ順序・個数で返すこと。
+【抽出ルール】
+- 各テキストには「手順1 維持する主張:」「手順2 譲歩する点:」「手順3 残存する対立点:」の見出しが必ず含まれる。その見出し直後の内容を参照すること。
+- maintain:    統合表明1の「手順1 維持する主張:」の核心を${limit}字以内で
+- concede:     統合表明1の「手順2 譲歩する点:」の内容を${limit}字以内で
+- conflict:    統合表明1の「手順3 残存する対立点:」の内容を${limit}字以内で。「残存する対立点はなし」と書かれていれば「対立点なし」と返すこと
+- t2_maintain: 統合表明2の「手順1 維持する主張:」を${limit}字以内で。ターン1から変化していれば変化点を優先すること
+- t2_concede:  統合表明2の「手順2 譲歩する点:」を${limit}字以内で。ターン1と異なる部分を優先すること
+- t2_conflict: 統合表明2の「手順3 残存する対立点:」を${limit}字以内で。ターン2では必ず何らかの対立点または解消状況が記載されているはずなので，それを具体的に抽出すること。「残存する対立点はなし」なら「対立解消」と返すこと
+
+【共通制約】
+- 「記述なし」「情報不足」「不明」等の無内容な語は絶対に使わないこと
+- 説明文・導入文は不可。パッと見てわかる具体的な内容にすること
+- 必ずJSON配列形式のみを出力。コードブロック不要。入力と同じ順序・個数で返すこと
 
 ${items.join('\n\n')}
 
 出力例（2エージェント）:
-[{"maintain":"UI簡素化を堅持","concede":"機能数を削減","conflict":"コスト負担の配分","t2_maintain":"UI原則は維持確認","t2_concede":"削減幅を縮小提案","t2_conflict":"配分比率は未決"},{"maintain":"機能充実を主張","concede":"段階的リリース受入","conflict":"品質基準の定義","t2_maintain":"充実方針を再確認","t2_concede":"段階案を精緻化","t2_conflict":"品質指標で交渉継続"}]`;
+[{"maintain":"UI簡素化を堅持","concede":"機能数を削減","conflict":"コスト負担の配分","t2_maintain":"UI原則は維持確認","t2_concede":"削減幅を縮小提案","t2_conflict":"配分比率は引き続き交渉"},{"maintain":"機能充実を主張","concede":"段階的リリース受入","conflict":"品質基準の定義","t2_maintain":"充実方針を再確認","t2_concede":"段階案を精緻化","t2_conflict":"品質指標の定義は合意に向け進展"}]`;
 
     const raw = await callGeminiWithRetry([{ role: 'user', parts: [{ text: prompt }] }]);
     const parsed = parseJsonResponse(raw);
     if (Array.isArray(parsed) && parsed.length === agents.length) return parsed;
 
-    // フォールバック
-    return agents.map(agent => ({
-        maintain:    `${agent.label}が維持`,
-        concede:     `${agent.label}が譲歩`,
-        conflict:    `${agent.label}の残存対立点`,
-        t2_maintain: '維持点の展開',
-        t2_concede:  '譲歩点の展開',
-        t2_conflict: '残存点の動向',
+    // フォールバック: 空文字列を返す（プレフィックスのみ表示になり「内容不明」より視覚的にマシ）
+    return agents.map(() => ({
+        maintain:    '',
+        concede:     '',
+        conflict:    '',
+        t2_maintain: '',
+        t2_concede:  '',
+        t2_conflict: '',
     }));
 };
 
@@ -306,10 +350,11 @@ ${texts.map((t, i) => `[${i}]: ${(t || '').slice(0, 300)}`).join('\n')}
 
 /** classDef スタイル文字列の一覧 */
 const CLASS_STYLES = {
-    red:   'fill:#fff,stroke:#dc3545,stroke-width:1.5px,color:#212529',
-    blue:  'fill:#fff,stroke:#0d6efd,stroke-width:1.5px,color:#212529',
-    green: 'fill:#fff,stroke:#198754,stroke-width:1.5px,color:#212529',
-    conn:  'fill:#f8f9fa,stroke:#6c757d,stroke-width:1.5px,stroke-dasharray:4 2,color:#6c757d',
+    red:    'fill:#fff,stroke:#dc3545,stroke-width:1.5px,color:#212529',
+    blue:   'fill:#fff,stroke:#0d6efd,stroke-width:1.5px,color:#212529',
+    green:  'fill:#fff,stroke:#198754,stroke-width:1.5px,color:#212529',
+    orange: 'fill:#fff,stroke:#fd7e14,stroke-width:1.5px,color:#212529',
+    conn:   'fill:#f8f9fa,stroke:#6c757d,stroke-width:1.5px,stroke-dasharray:4 2,color:#6c757d',
 };
 
 /** ビルダーに指定クラスの classDef を一括追加 */
@@ -327,8 +372,15 @@ const applyClassDefs = (builder, ...classNames) =>
  * 色: 赤（議題〜反論） / 青（サブ議題〜要約） / conn（継続コネクタ）
  */
 const buildMindmap1Code = async (topic, agents, result) => {
-    const phase3    = result.phase3 || [];
-    const rebuttals = result.phase2?.rebuttals || [];
+    const phase3        = result.phase3 || [];
+    const rebuttals     = result.phase2?.rebuttals || [];
+    const assumptionLog = result.assumptionDebateLog || [];
+
+    /** γ討議発言を summarizeLabels 用のテキストに変換 */
+    const toGammaSummaryInput = (assump) => {
+        const utterances = assump.gammaUtterances || [];
+        return utterances.map(u => `${u.label || ''}: ${u.text || ''}`).join('\n').slice(0, 300);
+    };
 
     // 並列データ取得（各グループが独立した配列のため index ずれなし）
     const [
@@ -338,6 +390,8 @@ const buildMindmap1Code = async (topic, agents, result) => {
         claimSums,
         reasonSums,
         rebuttalSums,
+        gammaSummaries,
+        assumptionContentSums,
     ] = await Promise.all([
         extractSubtopicSummaries(phase3),
         matchRebuttalToSubtopics(rebuttals, phase3),
@@ -345,12 +399,18 @@ const buildMindmap1Code = async (topic, agents, result) => {
         summarizeLabels(agents.map(a => a.coreClaim),     getCharLimit('label')),
         summarizeLabels(agents.map(a => a.rationale),     getCharLimit('label')),
         rebuttals.length > 0
-            ? summarizeLabels(rebuttals.map(r => r.text), getCharLimit('label'))
+            ? summarizeLabels(rebuttals.map(r => r.text), getCharLimit('rebuttal'))
+            : Promise.resolve([]),
+        assumptionLog.length > 0
+            ? summarizeLabels(assumptionLog.map(toGammaSummaryInput), getCharLimit('label'))
+            : Promise.resolve([]),
+        assumptionLog.length > 0
+            ? summarizeLabels(assumptionLog.map(a => a.content || ''), getCharLimit('label'))
             : Promise.resolve([]),
     ]);
 
     const b = createGraphBuilder();
-    applyClassDefs(b, 'red', 'blue', 'conn');
+    applyClassDefs(b, 'red', 'blue', 'conn', 'orange'); // orange: 暗黙の前提・γ討議（未使用でも無害）
 
     // ── 議題（赤）──
     b.addNode('n0', topicSums[0] || topic.slice(0, getCharLimit('label') - 1), 'red');
@@ -365,10 +425,24 @@ const buildMindmap1Code = async (topic, agents, result) => {
     });
 
     // ── 反論（赤）: defender の reason から出る ──
+    // エージェントラベルの共通プレフィックスを除いて短縮表示（例: "アイデアA"→"A"）
+    const agentLabels = agents.map(a => a.label);
+    const commonPfx = (() => {
+        if (agentLabels.length < 2) return '';
+        let pfx = agentLabels[0];
+        for (const l of agentLabels.slice(1)) {
+            while (pfx && !l.startsWith(pfx)) pfx = pfx.slice(0, -1);
+        }
+        return pfx;
+    })();
+    const shortLabel = (label) => (label && commonPfx && label.startsWith(commonPfx))
+        ? label.slice(commonPfx.length)
+        : label;
+
     rebuttals.forEach((r, i) => {
         const defenderIdx = agents.findIndex(a => a.label === r.defender);
         const fromId = defenderIdx >= 0 ? `reason_${defenderIdx}` : 'n0';
-        b.addNode(`reb${i}`, `${r.attacker}→${r.defender}: ${rebuttalSums[i] || ''}`, 'red');
+        b.addNode(`reb${i}`, `${shortLabel(r.attacker)}→${shortLabel(r.defender)}: ${rebuttalSums[i] || ''}`, 'red');
         b.addEdge(fromId, `reb${i}`);
     });
 
@@ -380,18 +454,25 @@ const buildMindmap1Code = async (topic, agents, result) => {
         .filter(r => r.subTopic.depth > 0)
         .sort((a, b) => a.subTopic.depth - b.subTopic.depth);
 
-    depth0.forEach((r, i) => {
-        const nid    = `sub${i}`;
-        const rebIdx = rebuttalMatches[i];  // -1 or valid index
+    depth0.forEach((r, localIdx) => {
+        const nid       = `sub${localIdx}`;
+        // filter() は同一オブジェクト参照を保持するため indexOf が正しく機能する
+        // （phase3 が再構築された場合は findIndex に切り替えること）
+        const phase3Idx = phase3.indexOf(r);
+        const rebIdxArr = rebuttalMatches[phase3Idx >= 0 ? phase3Idx : localIdx] || [];
         nodeIdMap[r.subTopic.id] = nid;
-        b.addNode(nid, r.subTopic.title, 'blue');
-        b.addEdge(rebIdx >= 0 ? `reb${rebIdx}` : 'n0', nid);
+        b.addNode(nid, `サブ議題: ${r.subTopic.title}`, 'blue');
+        if (rebIdxArr.length > 0) {
+            rebIdxArr.forEach(rebIdx => b.addEdge(`reb${rebIdx}`, nid));
+        } else {
+            b.addEdge('n0', nid);
+        }
     });
 
     depthN.forEach((r, i) => {
         const nid = `ss${i}`;
         nodeIdMap[r.subTopic.id] = nid;
-        b.addNode(nid, r.subTopic.title, 'blue');
+        b.addNode(nid, `サブ議題: ${r.subTopic.title}`, 'blue');
         // parentId 未登録なら depth0 の最近傍へフォールバック
         const parentNid = nodeIdMap[r.subTopic.parentId]
             || (depth0.length > 0 ? `sub${i % depth0.length}` : 'n0');
@@ -409,9 +490,30 @@ const buildMindmap1Code = async (topic, agents, result) => {
         leafIds.push(conId);
     });
 
+    // ── 暗黙の前提・γ討議（オレンジ）: 始発ノード ──
+    // dependsOn の先頭エージェント名を "〇の前提:" として表示
+    const gammaLeafIds = [];
+    assumptionLog.forEach((assump, i) => {
+        const depLabels  = assump.dependsOn || [];
+        const shortDeps  = depLabels.map(l => shortLabel(l)).join('・');
+        const prefix     = shortDeps ? `${shortDeps}の前提: ` : '前提: ';
+        const assumpId  = `assump_${i}`;
+        b.addNode(assumpId, `${prefix}${assumptionContentSums[i] || assump.content || `前提${i}`}`, 'orange');
+        // 始発ノードのため親への接続なし
+        if (gammaSummaries[i]) {
+            const gammaId = `agamma_${i}`;
+            b.addNode(gammaId, `γ討議: ${gammaSummaries[i]}`, 'orange');
+            b.addEdge(assumpId, gammaId);
+            gammaLeafIds.push(gammaId);
+        } else {
+            gammaLeafIds.push(assumpId);
+        }
+    });
+
     // ── 継続コネクタ（右端）──
+    const allLeafIds = [...leafIds, ...gammaLeafIds];
     b.addNode('cont1', '→ 統合フェーズへ', 'conn');
-    (leafIds.length > 0 ? leafIds : ['n0']).forEach(lid => b.addEdge(lid, 'cont1'));
+    (allLeafIds.length > 0 ? allLeafIds : ['n0']).forEach(lid => b.addEdge(lid, 'cont1'));
 
     return b.build();
 };
@@ -434,11 +536,12 @@ const buildMindmap2Code = async (agents, result) => {
     const synthesis = phase4.synthesis || {};
     const turn1Data = synthesis.turn1 || [];
     const turn2Data = synthesis.turn2 || [];
-    const { settled, compromise, remaining } = parseFinalSummary(phase4.finalSummary || '');
+    const { settled, compromise, remaining, actions } = parseFinalSummary(phase4.finalSummary || '');
 
-    const [sectionPoints, integrationStructure] = await Promise.all([
+    const [sectionPoints, integrationStructure, actionPoints] = await Promise.all([
         extractSectionPoints(settled, compromise, remaining),
         extractIntegrationStructure(agents, turn1Data, turn2Data),
+        extractActionPoints(actions),
     ]);
 
     const b = createGraphBuilder();
@@ -458,13 +561,13 @@ const buildMindmap2Code = async (agents, result) => {
         const t2CnId  = `t2cn_${i}`;  // turn2: 譲歩展開
         const t2CfId  = `t2cf_${i}`;  // turn2: 残存展開
 
-        b.addNode(stmtId, `${agent.label}の統合表明`, 'blue');
-        b.addNode(maintId, s.maintain || `${agent.label}が維持`,    'blue');
-        b.addNode(concId,  s.concede  || `${agent.label}が譲歩`,    'blue');
-        b.addNode(conflId, s.conflict || `${agent.label}の残存対立点`, 'blue');
-        b.addNode(t2MId,   s.t2_maintain || '', 'blue');
-        b.addNode(t2CnId,  s.t2_concede  || '', 'blue');
-        b.addNode(t2CfId,  s.t2_conflict || '', 'blue');
+        b.addNode(stmtId,  `${agent.label}の統合表明`, 'blue');
+        b.addNode(maintId, `解決済み: ${s.maintain || `${agent.label}が維持`}`,       'blue');
+        b.addNode(concId,  `妥協領域: ${s.concede  || `${agent.label}が譲歩`}`,       'blue');
+        b.addNode(conflId, `残存論点: ${s.conflict || `${agent.label}の残存対立点`}`,  'blue');
+        b.addNode(t2MId,   `解決済み: ${s.t2_maintain || ''}`, 'blue');
+        b.addNode(t2CnId,  `妥協領域: ${s.t2_concede  || ''}`, 'blue');
+        b.addNode(t2CfId,  `残存論点: ${s.t2_conflict || ''}`, 'blue');
 
         b.addEdge('prev2',  stmtId);
         b.addEdge(stmtId,   maintId);
@@ -487,15 +590,41 @@ const buildMindmap2Code = async (agents, result) => {
     b.addEdge('summary', 'compromise');
     b.addEdge('summary', 'remaining');
 
-    sectionPoints.settled.forEach((pt, i) => {
-        b.addNode(`s${i}`, pt, 'green'); b.addEdge('settled',    `s${i}`);
-    });
-    sectionPoints.compromise.forEach((pt, i) => {
-        b.addNode(`c${i}`, pt, 'green'); b.addEdge('compromise', `c${i}`);
-    });
-    sectionPoints.remaining.forEach((pt, i) => {
-        b.addNode(`r${i}`, pt, 'green'); b.addEdge('remaining',  `r${i}`);
-    });
+    if (sectionPoints.settled.length > 0) {
+        sectionPoints.settled.forEach((pt, i) => {
+            b.addNode(`s${i}`, pt, 'green'); b.addEdge('settled', `s${i}`);
+        });
+    } else {
+        b.addNode('s_none', '解決済み争点なし', 'green');
+        b.addEdge('settled', 's_none');
+    }
+    if (sectionPoints.compromise.length > 0) {
+        sectionPoints.compromise.forEach((pt, i) => {
+            b.addNode(`c${i}`, pt, 'green'); b.addEdge('compromise', `c${i}`);
+        });
+    } else {
+        b.addNode('c_none', '妥協案なし', 'green');
+        b.addEdge('compromise', 'c_none');
+    }
+
+    if (sectionPoints.remaining.length > 0) {
+        sectionPoints.remaining.forEach((pt, i) => {
+            b.addNode(`r${i}`, pt, 'green'); b.addEdge('remaining', `r${i}`);
+        });
+    } else {
+        b.addNode('r_none', '残存論点なし', 'green');
+        b.addEdge('remaining', 'r_none');
+    }
+
+    // ── 推奨アクション（緑）──
+    if (actionPoints.length > 0) {
+        b.addNode('actions', '推奨アクション', 'green');
+        b.addEdge('summary', 'actions');
+        actionPoints.forEach((pt, i) => {
+            b.addNode(`act${i}`, pt, 'green');
+            b.addEdge('actions', `act${i}`);
+        });
+    }
 
     return b.build();
 };
@@ -509,11 +638,16 @@ const buildMindmap2Code = async (agents, result) => {
  * @returns {Promise<{ mindmap1: string, mindmap2: string }>}
  */
 const buildMindmapCode = async (topic, agents, result) => {
-    const [mindmap1, mindmap2] = await Promise.all([
-        buildMindmap1Code(topic, agents, result),
-        buildMindmap2Code(agents, result),
-    ]);
-    return { mindmap1, mindmap2 };
+    try {
+        const [mindmap1, mindmap2] = await Promise.all([
+            buildMindmap1Code(topic, agents, result),
+            buildMindmap2Code(agents, result),
+        ]);
+        return { mindmap1, mindmap2 };
+    } catch (err) {
+        console.error('[mindmapService] buildMindmapCode failed:', err);
+        return { mindmap1: '', mindmap2: '' };
+    }
 };
 
 module.exports = { buildMindmapCode };
