@@ -27,6 +27,9 @@ const socketRooms = {};
 const completedSockets = new Set(); 
 // 複数ホストを防止するためのオブジェクト
 const roomHosted = {};
+// 結果をゲストにも共有するためのオブジェクト
+// ここはグローバルにした、時間がないから許してほしい
+global.roomResults = {};
 
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
@@ -151,12 +154,19 @@ app.get('/debate/:roomId', (req, res) => {
     const roomId = req.params.roomId;
     const profiles = roomProfiles[roomId] || [];
     const topic = roomThemes[roomId] || '';
-    res.render('debate', { profiles, topic });
+    const isHost = req.query.isHost === 'true';
+    res.render('debate', { profiles, topic, isHost, roomId});
 });
 
 //AI同士の議論フェーズ画面（現状まだ独立している）
 app.get('/debate', (req, res) => {
     res.render('debate');
+});
+
+app.get('/api/debate/result/:roomId', (req, res) => {
+    const result = roomResults[req.params.roomId];
+    if (!result) return res.json({ ready: false });
+    res.json({ ready: true, result });
 });
 
 // debate2.ejs をブラウザで直接確認するための表示ルート
@@ -214,7 +224,15 @@ io.on('connection', (socket) => {
         const total = roomTotals[roomId] || 0;
 
         io.to(roomId + '-waiting').emit('updateWaitingCount', count, total);
-    })
+    });
+
+    socket.on('joinDebate', (roomId) => {
+        socket.join(roomId + '-debate');
+    });
+
+    socket.on('notifyDebateStarted', (roomId) => {
+        socket.to(roomId + '-debate').emit('debateStarted');
+    });
 
     socket.on('start', (roomId, topic) => {
         // roomIdとその人数を記録しておく
@@ -226,7 +244,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('startDiscussion', (roomId) => {
-        io.to(roomId + '-waiting').emit('redirectToDiscussion', `/debate/${roomId}`);
+        socket.emit('redirectToDiscussion', `/debate/${roomId}?isHost=true`);
+        socket.to(roomId + '-waiting').emit('redirectToDiscussion', `/debate/${roomId}`);
     })
 
     socket.on('initDialog', async (roomId) => {

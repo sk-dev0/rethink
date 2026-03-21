@@ -51,6 +51,7 @@ router.post('/start', async (req, res) => {
 
     try {
         const result = await runDebate(topic, agents, maxTurns);
+        if (req.body.roomId) global.roomResults[req.body.roomId] = result;
         res.json(result);
     } catch (err) {
         console.error('[debate/start] エラー:', err);
