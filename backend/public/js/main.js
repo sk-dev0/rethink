@@ -623,6 +623,7 @@ const startDebate = async () => {
         document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
         await renderMindmap('mindmapContent', 'downloadMindmapBtn', data.mindmap1);
         await renderMindmap('mindmapContent2', 'downloadMindmap2Btn', data.mindmap2);
+        document.getElementById('debateCompletedBtn').removeAttribute('hidden');
     } catch (err) {
         alert('エラーが発生しました: ' + err.message);
         console.error(err);
