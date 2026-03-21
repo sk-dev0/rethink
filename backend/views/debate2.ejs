@@ -1,0 +1,215 @@
+﻿
+
+<div class="pb-5">
+  
+  <!-- コメント: overview 表示時に最終総括レポートを差し込む基準位置 -->
+  <div id="summaryOverviewMount"></div>
+
+  <!-- コメント: main.js が描画する最終総括レポート本体。overview とフェーズ5で移設して使い回す -->
+  <section id="summaryReportSection" class="d-none mb-4">
+    <div class="card border-success shadow-sm">
+      <div class="card-header bg-success text-white fw-semibold">
+        最終総括レポート
+      </div>
+      <div class="card-body">
+        <p id="summaryContent" class="mb-0" style="white-space: pre-wrap;"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- コメント: debate.ejs と同じ id を維持したマインドマップ表示領域。overview では summary の直下に表示する -->
+  <section id="mindmapOverviewSection" class="debate-mindmap-section d-none mb-4">
+    <!-- コメント: 議論フェーズ全体を俯瞰するマインドマップ -->
+    <div class="card border-success shadow-sm">
+      <div class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
+        <span>マインドマップ1（議論フェーズ）</span>
+        <button id="downloadMindmapBtn" class="btn btn-sm btn-light d-none" type="button">
+          画像を保存（PNG）
+        </button>
+      </div>
+      <div class="card-body pb-2">
+        <div id="mindmapContent" style="width:100%;height:75vh;min-height:400px;overflow:auto;border:1px solid #dee2e6;border-radius:0.375rem;"></div>
+        <p class="text-muted small mt-2 mb-0 text-center">
+          Ctrl＋スクロール: ズーム ／ スクロールバー: 移動
+        </p>
+      </div>
+    </div>
+
+    <!-- コメント: 統合フェーズの整理結果を別マインドマップとして表示 -->
+    <div class="card border-success shadow-sm">
+      <div class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
+        <span>マインドマップ2（統合フェーズ）</span>
+        <button id="downloadMindmap2Btn" class="btn btn-sm btn-light d-none" type="button">
+          画像を保存（PNG）
+        </button>
+      </div>
+      <div class="card-body pb-2">
+        <div id="mindmapContent2" style="width:100%;height:75vh;min-height:400px;overflow:auto;border:1px solid #dee2e6;border-radius:0.375rem;"></div>
+        <p class="text-muted small mt-2 mb-0 text-center">
+          Ctrl＋スクロール: ズーム ／ スクロールバー: 移動
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- コメント: 結果全体の入口となるカード型目次。overview 時のみ表示する -->
+  <section id="debateIndexSection" class="debate-index-section d-none">
+    <div class="debate-index-shell">
+      <div class="card-body p-4 p-lg-5">
+        <div class="debate-index-header">
+          <div>
+            <span class="debate-index-kicker">Debate Index</span>
+            <h2 class="debate-index-title">目次</h2>
+            <p class="debate-index-text">見たいフェーズのカードを選ぶと、そのフェーズの元セクションだけを表示します。</p>
+          </div>
+        </div>
+
+        <div class="debate-index-grid">
+          <article class="debate-index-card" data-phase-index="0" role="button" tabindex="0" aria-label="フェーズ1を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v5A2.5 2.5 0 0 1 16.5 15H11l-3.8 3v-3H7.5A2.5 2.5 0 0 1 5 12.5v-5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M8.5 9.5h7M8.5 12h4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 1</span>
+            </div>
+            <h3 class="debate-index-card-title">意見表明</h3>
+            <p class="debate-index-card-text">初期主張と前提を整理し、議論の出発点を確認します。</p>
+          </article>
+
+          <article class="debate-index-card" data-phase-index="1" role="button" tabindex="0" aria-label="フェーズ2を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle cx="10.5" cy="10.5" r="4.5" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="m14 14 4.5 4.5M8.5 10.5h4M10.5 8.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 2</span>
+            </div>
+            <h3 class="debate-index-card-title">情報取得・反論・サブ議題抽出</h3>
+            <p class="debate-index-card-text">相手の論点を分析し、反論材料と深掘り対象の論点を整理します。</p>
+          </article>
+
+          <article class="debate-index-card" data-phase-index="2" role="button" tabindex="0" aria-label="フェーズ3を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M8 6H5.5A2.5 2.5 0 0 0 3 8.5v4A2.5 2.5 0 0 0 5.5 15H6v3l3.8-3H12.5A2.5 2.5 0 0 0 15 12.5v-1" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M16 6h2.5A2.5 2.5 0 0 1 21 8.5v4A2.5 2.5 0 0 1 18.5 15H18v3l-3.8-3H11.5A2.5 2.5 0 0 1 9 12.5v-4A2.5 2.5 0 0 1 11.5 6H14" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 3</span>
+            </div>
+            <h3 class="debate-index-card-title">サブ議題議論</h3>
+            <p class="debate-index-card-text">主要論点を分解し、論点ごとの議論を深掘りします。</p>
+          </article>
+
+          <article class="debate-index-card" data-phase-index="3" role="button" tabindex="0" aria-label="フェーズ4を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6 6h12v4H6zM8 10v3.5M16 10v3.5M8 13.5h8M12 13.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="18.5" r="1.5" stroke="currentColor" stroke-width="1.8"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 4</span>
+            </div>
+            <h3 class="debate-index-card-title">前提検証</h3>
+            <p class="debate-index-card-text">反証成立の有無を確認します。</p>
+          </article>
+
+          <article class="debate-index-card" data-phase-index="4" role="button" tabindex="0" aria-label="フェーズ5を開く">
+            <div class="debate-index-top">
+              <span class="debate-index-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 4v4M12 16v4M6.5 7.5 9 10M15 14l2.5 2.5M4 12h4M16 12h4M6.5 16.5 9 14M15 10l2.5-2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.8"/>
+                </svg>
+              </span>
+              <span class="debate-index-phase">Phase 5</span>
+            </div>
+            <h3 class="debate-index-card-title">統合・結論</h3>
+            <p class="debate-index-card-text">最終ラウンドと総括に向けて、結論と統合視点を確認します。</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- コメント: フェーズ詳細画面。overview から遷移したときは 1 セクションずつ表示する -->
+  <div id="resultArea" class="d-none">
+    <!-- コメント: フェーズ1の描画先。main.js の renderPhase1 が中身を構築する -->
+    <div class="mb-4 debate-phase-section" data-phase-index="0">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ1: 意見表明</h2>
+      <p class="debate-phase-description">初期主張と前提を整理し、議論の出発点を確認します。</p>
+      <div class="accordion" id="phase1Accordion">
+        <div id="phase1Content"></div>
+      </div>
+    </div>
+
+    <!-- コメント: フェーズ2の各ステップをひとつの accordion にまとめて表示する -->
+    <div class="mb-4 debate-phase-section" data-phase-index="1">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ2: 情報取得・反論・サブ議題抽出</h2>
+      <p class="debate-phase-description">相手の論点を分析し、根拠収集から反論整理、深掘り論点の抽出までを行います。</p>
+      <div class="debate-step-guide">
+        <!-- コメント: フェーズ2の各ステップ説明を結果画面内に表示 -->
+        <div class="debate-step-guide-title">このフェーズで行うこと</div>
+        <ol class="debate-step-guide-list">
+          <li>Step1: 情報取得結果
+            各エージェントが議論に必要な情報や根拠を集めます。
+          </li>
+          <li>Step2: 情報信頼性検証
+            集めた情報の信頼性や偏りを中立視点で確認します。
+          </li>
+          <li>Step3: 全対全反論
+            それぞれの立場から相手の主張に対する反論を組み立てます。
+          </li>
+          <li>Step4: サブ議題一覧
+            ここから深掘りすべき論点を抽出して整理します。
+          </li>
+          <li>Step5: 要素分解
+            論点を構成する主張、根拠、価値前提に分けて見直します。
+          </li>
+        </ol>
+      </div>
+      <div class="accordion" id="phase2Accordion">
+        <div id="phase2Content"></div>
+      </div>
+    </div>
+
+    <!-- コメント: フェーズ3はサブ議題ごとの入れ子 accordion で深掘りを見せる -->
+    <div class="mb-4 debate-phase-section" data-phase-index="2">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ3: サブ議題議論</h2>
+      <p class="debate-phase-description">主要論点を分解し、論点ごとの議論を深掘りします。</p>
+      <div class="accordion" id="phase3Accordion">
+        <div id="phase3Content"></div>
+      </div>
+    </div>
+
+    <!-- コメント: debate.ejs から移植した前提検証セクション。フェーズ4カードからこのセクションを開く -->
+    <div id="assumptionTrackSection" class="mb-4 debate-phase-section d-none" data-phase-index="3">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ4: 前提検証</h2>
+      <p class="debate-phase-description">議論で置かれた前提を別トラックで揺さぶり、どこまで反証できるかを確認します。</p>
+      <!-- コメント: 前提検証の結果が未生成のときに表示する案内 -->
+      <p id="assumptionTrackEmptyState" class="text-muted mb-3 d-none">前提検証の結果はまだありません。</p>
+      <div class="accordion" id="assumptionTrackAccordion">
+        <div id="assumptionTrackContent"></div>
+      </div>
+    </div>
+
+    <!-- コメント: main.js の phase4 描画先 id はそのまま使い、UI 上はフェーズ5として見せる -->
+    <div class="mb-4 debate-phase-section" data-phase-index="4">
+      <h2 class="fw-bold mb-3 border-bottom pb-2">フェーズ5: 統合表明とまとめ</h2>
+      <p class="debate-phase-description">最終ラウンドと総括に向けて、結論と統合視点を確認します。</p>
+      <div id="phase4Content"></div>
+      <!-- コメント: overview 用の summary セクションを、フェーズ5表示時だけここへ差し替える -->
+      <div id="phase5SummaryMount" class="mt-4"></div>
+    </div>
+  </div>
+</div>
+
+
+

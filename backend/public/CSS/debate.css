@@ -1,0 +1,58 @@
+/* カスタムスタイル - Bootstrap補完用 */
+
+/* AI 1号機（アイデアA側）のカードスタイル */
+.agent-a-card {
+  background-color: #e8f4fd;
+  border-left: 4px solid #0d6efd;
+}
+
+/* AI 2号機（アイデアB側）のカードスタイル */
+.agent-b-card {
+  background-color: #fde8e8;
+  border-left: 4px solid #dc3545;
+}
+
+/* AI 3号機（アイデアC側）のカードスタイル */
+.agent-c-card {
+  background-color: #e8fde8;
+  border-left: 4px solid #198754;
+}
+
+/* AI 4号機（アイデアD側）のカードスタイル */
+.agent-d-card {
+  background-color: #fff8e1;
+  border-left: 4px solid #ffc107;
+}
+
+/* AI 5号機（アイデアE側）のカードスタイル */
+.agent-e-card {
+  background-color: #e0f7fa;
+  border-left: 4px solid #0dcaf0;
+}
+
+/* AI 6号機（アイデアF側）のカードスタイル */
+.agent-f-card {
+  background-color: #f0f0f0;
+  border-left: 4px solid #6c757d;
+}
+
+/* それ以外（フォールバック） */
+.agent-x-card {
+  background-color: #f5f5f5;
+  border-left: 4px solid #333;
+}
+
+/* エージェントラベル */
+.agent-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+}
+
+/* 議論カードのホバー効果 */
+.card {
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
