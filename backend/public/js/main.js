@@ -543,12 +543,13 @@ const renderAssumptionDebateLog = (assumptionDebateLog) => {
     }
 
     section.classList.remove('d-none');
-    container.innerHTML = '';
+    container.innerHTML = '<div class="accordion" id="assumptionTrackAccordion"></div>';
 
     const accId = 'assumptionTrackAccordion';
+    const accEl = document.getElementById(accId);
     assumptionDebateLog.forEach((entry, i) => {
         const itemId = `at_${i}`;
-        const titleShort = entry.content ? entry.content.slice(0, 20) : '';
+        const titleShort = entry.content || '';
         const accordionTitle = `${esc(entry.id || String(i))}: ${esc(titleShort)}`;
         const invalidatedLabel = (entry.invalidationScore || 0) >= 0.7 ? '反証成立' : '反証未成立';
 
@@ -565,7 +566,7 @@ const renderAssumptionDebateLog = (assumptionDebateLog) => {
 <h6 class="fw-semibold mt-3">γ攻撃発言</h6>
 ${utterancesHtml}`;
 
-        container.insertAdjacentHTML('beforeend',
+        accEl.insertAdjacentHTML('beforeend',
             createAccordionItem(accId, itemId, accordionTitle, bodyHtml, i === 0)
         );
     });
@@ -622,6 +623,7 @@ const startDebate = async () => {
         document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
         await renderMindmap('mindmapContent', 'downloadMindmapBtn', data.mindmap1);
         await renderMindmap('mindmapContent2', 'downloadMindmap2Btn', data.mindmap2);
+        document.getElementById('debateCompletedBtn').removeAttribute('hidden');
     } catch (err) {
         alert('エラーが発生しました: ' + err.message);
         console.error(err);
