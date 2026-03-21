@@ -593,7 +593,7 @@ const startDebate = async () => {
 
     const btn = document.getElementById('startBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>議論実行中...（数秒かかります）';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>議論実行中...（数分かかります）';
 
     document.getElementById('resultArea').classList.add('d-none');
 
@@ -625,7 +625,6 @@ const startDebate = async () => {
     } catch (err) {
         alert('エラーが発生しました: ' + err.message);
         console.error(err);
-    } finally {
         btn.disabled = false;
         btn.innerHTML = '議論開始';
     }

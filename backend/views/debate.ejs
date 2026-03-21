@@ -525,7 +525,6 @@
   <% if (isHost) { %>
   document.getElementById('startBtn').addEventListener('click', () => {
       socket.emit('notifyDebateStarted', roomId);
-      document.getElementById('startBtn').disabled = true;
   }, { once: true });
   <% } else { %>
   socket.on('debateStarted', () => {
