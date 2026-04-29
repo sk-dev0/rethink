@@ -10,14 +10,6 @@ const { runDebate } = require('../services/debateEngine');
 const { roomResults } = require('../store');
 
 /**
- * GET /
- * debate画面をレンダリング
- */
-router.get('/', (req, res) => {
-    res.render('index');
-});
-
-/**
  * POST /api/debate/start
  * 議論開始エンドポイント
  * Body: { topic: string, agents: Array, maxTurns: number }
@@ -58,6 +50,12 @@ router.post('/start', async (req, res) => {
         console.error('[debate/start] エラー:', err);
         res.status(500).json({ error: '議論の実行中にエラーが発生しました', detail: err.message });
     }
+});
+
+router.get('/result/:roomId', (req, res) => {
+    const result = roomResults[req.params.roomId];
+    if (!result) return res.json({ ready: false });
+    res.json({ ready: true, result });
 });
 
 module.exports = router;
