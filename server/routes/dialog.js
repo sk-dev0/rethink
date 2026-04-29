@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-const { roomProfiles, completedSockets } = require('./store');
-const { createSession, deleteSession, sendMessage, generateProfile } = require('./services/geminiClient');
+const { roomProfiles, completedSockets } = require('../store');
+const { createSession, deleteSession, sendMessage, generateProfile } = require('../services/geminiClient');
 
 router.get('/', async (req, res) => {
     const socketId = req.query.socketId;

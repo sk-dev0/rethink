@@ -14,22 +14,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// AI Debate API
-const debateRoutes = require('./routes/debate');
-app.use('/api/debate', debateRoutes);
-
-const debateViewRoutes = require('./routes/debateView');
-app.use('/debate', debateViewRoutes);
-
-const roomRoutes = require('./routes/room');
-app.use('/room', roomRoutes);
-
-const dialogRoutes = require('./routes/dialog');
-app.use('/dialog', dialogRoutes);
-
-const waitingRoutes = require('./routes/waiting');
-app.use('/waiting', waitingRoutes);
-
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -50,6 +34,22 @@ app.get('/', (req, res) => {
 app.get('/index', (req, res) => {
     res.render('index');
 });
+
+// AI Debate API
+const debateRoutes = require('./routes/debate');
+app.use('/api/debate', debateRoutes);
+
+const debateViewRoutes = require('./routes/debateView');
+app.use('/debate', debateViewRoutes);
+
+const roomRoutes = require('./routes/room');
+app.use('/room', roomRoutes);
+
+const dialogRoutes = require('./routes/dialog');
+app.use('/dialog', dialogRoutes);
+
+const waitingRoutes = require('./routes/waiting');
+app.use('/waiting', waitingRoutes);
 
 app.use((req, res) => {
     res.status(404).send(`
