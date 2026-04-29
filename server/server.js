@@ -14,23 +14,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// 参加人数を管理するためのオブジェクト
-const roomTotals = {};
-// ルームごとのプロフィールを管理するオブジェクト
-const roomProfiles = {};
-// 議題・テーマ管理のためのオブジェクト
-const roomThemes = {};
-// 参加人数を管理するためのオブジェクト
-const roomMaxParticipants = {};
-// 途中離脱検知用のオブジェクト
-const socketRooms = {}; 
-// 完了済を検知する
-const completedSockets = new Set(); 
-// 複数ホストを防止するためのオブジェクト
-const roomHosted = {};
-// 結果をゲストにも共有するためのオブジェクト
-// ここはグローバルにした、時間がないから許してほしい
-global.roomResults = {};
+// AI Debate API
+const debateRoutes = require('./routes/debate');
+app.use('/api/debate', debateRoutes);
+
+const roomRoutes = require('./routes/room');
+app.use('/room', roomRoutes);
+
+const dialogRoutes = require('./routes/dialog');
+app.use('/dialog', dialogRoutes);
 
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
@@ -47,38 +39,6 @@ app.use(session({
 app.get('/', (req, res) => {
     const roomId = uuidv4();
     res.render('index', { roomId });
-});
-
-
-
-
-
-app.get('/dialog', async (req, res) => {
-    const socketId = req.query.socketId;
-    const roomId = req.query.roomId;
-    const isHost = req.query.isHost === 'true';
-    await createSession(socketId);
-    res.render('dialog', { socketId, roomId, isHost });
-});
-
-app.post('/dialog/message', async (req, res) => {
-    const { socketId, message } = req.body;
-    
-    const reply = await sendMessage(socketId, message);
-    res.json({ reply });
-});
-
-app.post('/dialog/profile', async (req, res) => {
-    const { socketId, history, roomId } = req.body;
-    const profile = await generateProfile(socketId, history);
-    if (!roomProfiles[roomId]) roomProfiles[roomId] = [];
-    roomProfiles[roomId].push(profile);
-    completedSockets.add(socketId);
-    //ユーザーが増え続ける限り、チャットのキャッシュが残り続けるため削除する。
-    deleteSession(socketId);
-    res.json({ profile });
-    // 開発中は残しておく。本番ではこのログは消す
-    console.log('プロファイル生成完了:', profile);
 });
 
 app.get('/waiting/:roomId/host', (req, res) => {
@@ -159,9 +119,7 @@ app.get('/debate2', (req, res) => {
     res.render('debate2');
 });
 
-// AI Debate API
-const debateRoutes = require('./routes/debate');
-app.use('/api/debate', debateRoutes);
+
 
 app.use((req, res) => {
     res.status(404).send(`

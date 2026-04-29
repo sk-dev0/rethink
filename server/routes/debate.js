@@ -7,6 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const { runDebate } = require('../services/debateEngine');
+const { roomResults } = require('../store');
 
 /**
  * GET /
@@ -51,7 +52,7 @@ router.post('/start', async (req, res) => {
 
     try {
         const result = await runDebate(topic, agents, maxTurns);
-        if (req.body.roomId) global.roomResults[req.body.roomId] = result;
+        if (req.body.roomId) roomResults[req.body.roomId] = result;
         res.json(result);
     } catch (err) {
         console.error('[debate/start] エラー:', err);
