@@ -8,28 +8,11 @@ const http = require('http');
 const { Server } = require('socket.io');
 const session = require('express-session');
 const { createSession, getSession, deleteSession, startChat, sendMessage, generateProfile } = require('./services/geminiClient');
+const { roomTotals, roomProfiles, roomThemes, roomMaxParticipants, socketRooms, completedSockets, roomHosted, roomResults } = require('./store');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-
-// 参加人数を管理するためのオブジェクト
-const roomTotals = {};
-// ルームごとのプロフィールを管理するオブジェクト
-const roomProfiles = {};
-// 議題・テーマ管理のためのオブジェクト
-const roomThemes = {};
-// 参加人数を管理するためのオブジェクト
-const roomMaxParticipants = {};
-// 途中離脱検知用のオブジェクト
-const socketRooms = {}; 
-// 完了済を検知する
-const completedSockets = new Set(); 
-// 複数ホストを防止するためのオブジェクト
-const roomHosted = {};
-// 結果をゲストにも共有するためのオブジェクト
-// ここはグローバルにした、時間がないから許してほしい
-global.roomResults = {};
 
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
@@ -48,135 +31,25 @@ app.get('/', (req, res) => {
     res.render('index', { roomId });
 });
 
-app.get('/room/:roomId/host', (req, res) => {
-    const roomId = req.params.roomId;
-    if (roomHosted[roomId]) {
-        return res.redirect('/room/' + roomId);
-    }
-    roomHosted[roomId] = true;
-    const max = parseInt(req.query.max) || 4;
-    roomMaxParticipants[roomId] = max;
-    res.render('host', { roomId });
-});
-
-app.get('/room/:roomId', (req, res) => {
-    const roomId = req.params.roomId;
-    res.render('lobby', { roomId });
-});
-
-app.get('/dialog', async (req, res) => {
-    const socketId = req.query.socketId;
-    const roomId = req.query.roomId;
-    const isHost = req.query.isHost === 'true';
-    await createSession(socketId);
-    res.render('dialog', { socketId, roomId, isHost });
-});
-
-app.post('/dialog/message', async (req, res) => {
-    const { socketId, message } = req.body;
-    
-    const reply = await sendMessage(socketId, message);
-    res.json({ reply });
-});
-
-app.post('/dialog/profile', async (req, res) => {
-    const { socketId, history, roomId } = req.body;
-    const profile = await generateProfile(socketId, history);
-    if (!roomProfiles[roomId]) roomProfiles[roomId] = [];
-    roomProfiles[roomId].push(profile);
-    completedSockets.add(socketId);
-    //ユーザーが増え続ける限り、チャットのキャッシュが残り続けるため削除する。
-    deleteSession(socketId);
-    res.json({ profile });
-    // 開発中は残しておく。本番ではこのログは消す
-    console.log('プロファイル生成完了:', profile);
-});
-
-app.get('/waiting/:roomId/host', (req, res) => {
-    const roomId = req.params.roomId;
-    if (!roomHosted[roomId]) {
-        return res.redirect('/waiting/' + roomId);
-    }
-    res.render('waiting', { roomId, isHost: true });
-});
-
-app.get('/waiting/:roomId', (req, res) => {
-    const roomId = req.params.roomId;
-    res.render('waiting', { roomId, isHost: false });
-});
-
-app.get('/discussion', (req, res) => {
-    res.render('discussion');
-});
-
 app.get('/index', (req, res) => {
     res.render('index');
-});
-
-// テスト用ルート
-app.get('/debug/debate', (req, res) => {
-    const dummyProfiles = [
-        {
-            socketId: 'dummy-1',
-            core_claim: '授業へのスマホ持ち込みを認めるべきだ',
-            rationale: '調べ学習や辞書代わりとして活用でき、学習効率が上がる',
-            preconditions: '適切なルールを設けた上での使用を前提とする',
-            experience: '実際に調べ学習でスマホを使った授業の方が理解度が高かった'
-        },
-        {
-            socketId: 'dummy-2',
-            core_claim: '授業へのスマホ持ち込みは認めるべきでない',
-            rationale: 'SNSやゲームへの誘惑があり、集中力が低下する',
-            preconditions: '自己管理が難しい年齢層を対象とした場合に限る',
-            experience: 'スマホを持ち込んだクラスでは授業中の私語や脱線が増えた'
-        },
-        {
-            socketId: 'dummy-3',
-            core_claim: '授業の内容や状況に応じて柔軟に判断すべきだ',
-            rationale: '一律禁止や許可より、場面に応じた使い分けが現実的である',
-            preconditions: '教師と生徒が使用ルールについて合意形成できることが前提',
-            experience: '実際に教科によってスマホの有用性が大きく異なると感じた'
-        },
-        {
-            socketId: 'dummy-4',
-            core_claim: '保護者や地域社会も含めた幅広い議論が必要だ',
-            rationale: 'スマホの使用は学校だけの問題ではなく家庭環境にも依存するため',
-            preconditions: '学校単独での決定ではなく保護者との合意が必要である',
-            experience: '保護者間でスマホの使用方針が異なり学校のルールと家庭のルールが矛盾することを経験した'
-        }
-    ];
-    const topic = '授業にスマホの使用を認めるべきか';
-    res.render('debate', { profiles: dummyProfiles, topic });
-});
-
-// ここで生成したプロフィールを渡すようにした
-app.get('/debate/:roomId', (req, res) => {
-    const roomId = req.params.roomId;
-    const profiles = roomProfiles[roomId] || [];
-    const topic = roomThemes[roomId] || '';
-    const isHost = req.query.isHost === 'true';
-    res.render('debate', { profiles, topic, isHost, roomId});
-});
-
-//AI同士の議論フェーズ画面（現状まだ独立している）
-app.get('/debate', (req, res) => {
-    res.render('debate');
-});
-
-app.get('/api/debate/result/:roomId', (req, res) => {
-    const result = roomResults[req.params.roomId];
-    if (!result) return res.json({ ready: false });
-    res.json({ ready: true, result });
-});
-
-// debate2.ejs をブラウザで直接確認するための表示ルート
-app.get('/debate2', (req, res) => {
-    res.render('debate2');
 });
 
 // AI Debate API
 const debateRoutes = require('./routes/debate');
 app.use('/api/debate', debateRoutes);
+
+const debateViewRoutes = require('./routes/debateView');
+app.use('/debate', debateViewRoutes);
+
+const roomRoutes = require('./routes/room');
+app.use('/room', roomRoutes);
+
+const dialogRoutes = require('./routes/dialog');
+app.use('/dialog', dialogRoutes);
+
+const waitingRoutes = require('./routes/waiting');
+app.use('/waiting', waitingRoutes);
 
 app.use((req, res) => {
     res.status(404).send(`

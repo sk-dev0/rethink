@@ -7,14 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const { runDebate } = require('../services/debateEngine');
-
-/**
- * GET /
- * debate画面をレンダリング
- */
-router.get('/', (req, res) => {
-    res.render('index');
-});
+const { roomResults } = require('../store');
 
 /**
  * POST /api/debate/start
@@ -51,12 +44,18 @@ router.post('/start', async (req, res) => {
 
     try {
         const result = await runDebate(topic, agents, maxTurns);
-        if (req.body.roomId) global.roomResults[req.body.roomId] = result;
+        if (req.body.roomId) roomResults[req.body.roomId] = result;
         res.json(result);
     } catch (err) {
         console.error('[debate/start] エラー:', err);
         res.status(500).json({ error: '議論の実行中にエラーが発生しました', detail: err.message });
     }
+});
+
+router.get('/result/:roomId', (req, res) => {
+    const result = roomResults[req.params.roomId];
+    if (!result) return res.json({ ready: false });
+    res.json({ ready: true, result });
 });
 
 module.exports = router;
