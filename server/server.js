@@ -24,6 +24,9 @@ app.use('/room', roomRoutes);
 const dialogRoutes = require('./routes/dialog');
 app.use('/dialog', dialogRoutes);
 
+const waitingRoutes = require('./routes/waiting');
+app.use('/waiting', waitingRoutes);
+
 app.engine('ejs', engine);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -39,19 +42,6 @@ app.use(session({
 app.get('/', (req, res) => {
     const roomId = uuidv4();
     res.render('index', { roomId });
-});
-
-app.get('/waiting/:roomId/host', (req, res) => {
-    const roomId = req.params.roomId;
-    if (!roomHosted[roomId]) {
-        return res.redirect('/waiting/' + roomId);
-    }
-    res.render('waiting', { roomId, isHost: true });
-});
-
-app.get('/waiting/:roomId', (req, res) => {
-    const roomId = req.params.roomId;
-    res.render('waiting', { roomId, isHost: false });
 });
 
 app.get('/index', (req, res) => {
