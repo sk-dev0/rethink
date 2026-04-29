@@ -8,6 +8,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const session = require('express-session');
 const { createSession, getSession, deleteSession, startChat, sendMessage, generateProfile } = require('./services/geminiClient');
+const { roomTotals, roomProfiles, roomThemes, roomMaxParticipants, socketRooms, completedSockets, roomHosted, roomResults } = require('./store');
 
 const app = express();
 const server = http.createServer(app);
@@ -48,21 +49,9 @@ app.get('/', (req, res) => {
     res.render('index', { roomId });
 });
 
-app.get('/room/:roomId/host', (req, res) => {
-    const roomId = req.params.roomId;
-    if (roomHosted[roomId]) {
-        return res.redirect('/room/' + roomId);
-    }
-    roomHosted[roomId] = true;
-    const max = parseInt(req.query.max) || 4;
-    roomMaxParticipants[roomId] = max;
-    res.render('host', { roomId });
-});
 
-app.get('/room/:roomId', (req, res) => {
-    const roomId = req.params.roomId;
-    res.render('lobby', { roomId });
-});
+
+
 
 app.get('/dialog', async (req, res) => {
     const socketId = req.query.socketId;
@@ -103,10 +92,6 @@ app.get('/waiting/:roomId/host', (req, res) => {
 app.get('/waiting/:roomId', (req, res) => {
     const roomId = req.params.roomId;
     res.render('waiting', { roomId, isHost: false });
-});
-
-app.get('/discussion', (req, res) => {
-    res.render('discussion');
 });
 
 app.get('/index', (req, res) => {
