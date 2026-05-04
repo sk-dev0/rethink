@@ -2,10 +2,9 @@
 
 <div class="container mt-5" style="max-width: 600px;">
     <div class="text-center mb-4">
-        <div class="px-4 py-3 mb-4 rounded-3" style="background:#f0f6ff; border-left: 4px solid #1f6988;">
-            <h2 class="fw-bold mb-0" style="color:#1f6988;">インタビュー完了待ち</h2>
+        <div class="card hero-card px-4 py-3 mb-4 text-center">
+            <h2 class="fw-bold mb-0">インタビュー完了待ち</h2>
         </div>
-        <p class="text-muted">他の参加者の対話が完了するまでお待ちください</p>
     </div>
 
     <div class="card shadow-sm mb-4 border-primary">
@@ -13,8 +12,9 @@
             <h5 class="card-title text-primary"><i class="bi bi-people me-2"></i>完了状況</h5>
             <p class="card-text text-muted small">対話が完了した人数です</p>
             <h2 class="text-center fw-bold">
-                <span id="count">0/0</span>
-                <span class="fs-5 text-muted"> 人完了</span>
+                <span id="count" style="color: #f0f0f0;">0</span>
+                <span style="color: #6fa8f5;"> / <span id="total">-</span></span>
+                <span class="fs-5 text-muted"> 人が参加中</span>
             </h2>
         </div>
     </div>
@@ -40,6 +40,17 @@
     <% } %>
 </div>
 
+<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3">
+    <div id="completeToast" class="toast align-items-center border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body">
+                ✓ 全員の対話が完了しました！議論を開始できます。
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
@@ -56,12 +67,14 @@
 
     // 参加人数の更新を検知して、全員が揃うとボタンを押せるようにする
     socket.on('updateWaitingCount', (count, total) => {
-        document.getElementById('count').textContent = count + '/' + total;
+        document.getElementById('count').textContent = count;
+        document.getElementById('total').textContent = total;
         if (count >= total && total > 0) {
             const startBtn = document.getElementById('startBtn');
             if (startBtn) {
                 startBtn.disabled = false;
-                alert('全員の対話が完了しました！議論を開始できます。'); 
+                const toast = new bootstrap.Toast(document.getElementById('completeToast'));
+                toast.show();
             }
         }
     });

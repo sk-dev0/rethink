@@ -194,7 +194,7 @@ body {
   color: #6fa8f5 !important;
 }
 
-#copyToast {
+#copyToast, #completeToast {
     width: min(600px, 90vw);
     max-width: 600px;
     background-color: #1a1d25;
@@ -203,7 +203,7 @@ body {
     box-shadow: 0 0 12px rgba(45, 107, 79, 0.7), 0 0 24px rgba(45, 107, 79, 0.3);
 }
 
-#copyToast .btn-close {
+#copyToast .btn-close, #completeToast .btn-close {
     filter: invert(1);
 }
 
