@@ -1,0 +1,203 @@
+/* ===================================
+   Rethink — Dark Theme
+   Bootstrap 5 上書き + 独自スタイル
+=================================== */
+
+/* --- ベース --- */
+body {
+  background-color: #0f1117;
+  color: #e0e0e0;
+}
+
+/* --- カード --- */
+.card {
+  background-color: #1a1d25;
+  border: 0.5px solid #2a2d35 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease;
+}
+
+.card-title {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.card-text,
+.text-muted {
+  color: #888 !important;
+}
+
+/* --- ボーダーアクセント（border-primary / border-success） --- */
+.border-primary {
+  border-color: #3a7bd5 !important;
+  box-shadow: 0 0 12px rgba(58, 123, 213, 0.7), 0 0 24px rgba(58, 123, 213, 0.3) !important;
+}
+
+.border-success {
+  border-color: #2d6b4f !important;
+  box-shadow: 0 0 12px rgba(45, 107, 79, 0.7), 0 0 24px rgba(45, 107, 79, 0.3) !important;
+}
+
+/* --- フォームコントロール（URLコピー欄など） --- */
+.form-control {
+  background-color: #0f1117;
+  border: 0.5px solid #2a2d35;
+  border-radius: 8px;
+  color: #aaaaaa;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.form-control:focus {
+  background-color: #0f1117;
+  border-color: #3a7bd5;
+  color: #6fa8f5;
+  box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.2);
+}
+
+.form-control[readonly] {
+  background-color: #0f1117;
+  opacity: 1;
+}
+
+/* --- ボタン --- */
+.btn-primary {
+  background-color: #1e3a5f;
+  border: 0.5px solid #3a7bd5;
+  color: #6fa8f5;
+  border-radius: 8px;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: #254a77;
+  border-color: #5a9bf5;
+  color: #90bfff;
+}
+
+.btn-success {
+  background-color: #1a3328;
+  border: 0.5px solid #2d6b4f;
+  color: #4caf82;
+  border-radius: 8px;
+}
+
+.btn-success:hover,
+.btn-success:focus {
+  background-color: #1f3f32;
+  border-color: #3d8b65;
+  color: #6fcf97;
+}
+
+.btn-outline-primary {
+  border-color: #2a2d35;
+  color: #888;
+  border-radius: 8px;
+}
+
+.btn-outline-primary:hover,
+.btn-check:checked + .btn-outline-primary {
+  background-color: #1e3a5f;
+  border-color: #3a7bd5;
+  color: #6fa8f5;
+}
+
+/* --- ヘッダーバッジ（「ルーム入室中」などのタイトルバー） --- */
+.page-badge {
+  display: inline-block;
+  border: 0.5px solid #3a7bd5;
+  color: #6fa8f5;
+  font-size: 11px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  margin-bottom: 1rem;
+}
+
+/* --- ヒーローセクション（indexページ上部） --- */
+.hero-section {
+  text-align: center;
+  padding: 3rem 1.5rem 2rem;
+  border-bottom: 0.5px solid #2a2d35;
+  margin-bottom: 1.5rem;
+}
+
+.hero-section h2 {
+  font-size: 22px;
+  font-weight: 500;
+  color: #f0f0f0;
+  margin-bottom: 0.75rem;
+}
+
+.hero-section p {
+  font-size: 14px;
+  color: #888;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.hero-card {
+  box-shadow: 0 0 12px rgba(108, 103, 110, 0.7), 0 0 24px rgba(108, 103, 110, 0.3) !important;
+  border-color: #a855c8 !important;
+}
+
+.participants-card {
+  box-shadow: 0 0 12px rgba(108, 103, 110, 0.7), 0 0 24px rgba(108, 103, 110, 0.3) !important;
+  border-color: #6C676E !important;
+}
+
+/* --- テキスト色 --- */
+.text-primary {
+  color: #6fa8f5 !important;
+}
+
+.text-success {
+  color: #4caf82 !important;
+}
+
+.text-warning {
+  color: #e6b84a !important;
+}
+
+.text-white {
+  color: #f0f0f0 !important;
+}
+
+/* --- アクセントドット（カードタイトル左の小丸） --- */
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.dot-blue  { background-color: #6fa8f5; }
+.dot-green { background-color: #4caf82; }
+.dot-amber { background-color: #e6b84a; }
+
+/* --- ナビゲーションバー（headerパーシャル用） --- */
+.navbar {
+  background-color: #0f1117 !important;
+  border-bottom: 0.5px solid #2a2d35;
+}
+
+.navbar-brand,
+.nav-link {
+  color: #e0e0e0 !important;
+}
+
+.nav-link:hover {
+  color: #6fa8f5 !important;
+}
+
+/* --- エージェントカード（debateページ、メンバー作成分を上書き） --- */
+.agent-a-card { background-color: #1a2535; border-left: 3px solid #3a7bd5; }
+.agent-b-card { background-color: #251a1a; border-left: 3px solid #c0392b; }
+.agent-c-card { background-color: #1a2520; border-left: 3px solid #2d6b4f; }
+.agent-d-card { background-color: #252018; border-left: 3px solid #c08a17; }
+.agent-e-card { background-color: #1a2428; border-left: 3px solid #0aa3c2; }
+.agent-f-card { background-color: #1e1e22; border-left: 3px solid #555; }
+.agent-x-card { background-color: #1a1a1e; border-left: 3px solid #444; }
