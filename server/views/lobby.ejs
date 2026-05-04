@@ -2,10 +2,9 @@
 
 <div class="container mt-5" style="max-width: 600px;">
     <div class="text-center mb-4">
-        <div class="px-4 py-3 mb-4 rounded-3" style="background:#f0f6ff; border-left: 4px solid #1f6988;">
-            <h2 class="fw-bold mb-0" style="color:#1f6988;">ルーム入室中</h2>
+        <div class="card hero-card px-4 py-3 mb-4 text-center">
+            <h2 class="fw-bold mb-0">ルーム入室中</h2>
         </div>
-        <p class="text-muted">ホストがAIインタビューを開始するまでお待ちください</p>
     </div>
 
     <div class="card shadow-sm mb-4">
@@ -22,7 +21,11 @@
         <div class="card-body p-4">
             <h5 class="card-title text-primary"><i class="bi bi-people me-2"></i>参加状況</h5>
             <p class="card-text text-muted small">現在ロビーに参加している人数です</p>
-            <h2 class="text-center fw-bold"><span id="count">0</span><span class="fs-5 text-muted"> 人が参加中</span></h2>
+            <h2 class="text-center fw-bold">
+                <span id="count" style="color: #f0f0f0;">0</span>
+                <span style="color: #6fa8f5;"> / <span id="max">-</span></span>
+                <span class="fs-5 text-muted"> 人が参加中</span>
+            </h2>
         </div>
     </div>
 
@@ -31,6 +34,17 @@
             <h5 class="card-title"><i class="bi bi-hourglass-split me-2 text-warning"></i>開始待ち</h5>
             <p class="card-text text-muted small">ホストが開始ボタンを押すとAIインタビューに移行します</p>
             <%- partial('partials/waveWaiting') %>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3">
+    <div id="errorToast" class="toast align-items-center border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="errorToastMessage">
+                <i class="bi bi-exclamation-triangle me-2"></i><span id="errorToastText"></span>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     </div>
 </div>
@@ -45,8 +59,15 @@
     });
 
     socket.on('updateCount', (count, max) => {
-        document.getElementById('count').textContent = count + ' / ' + max;
+        document.getElementById('count').textContent = count;
+        document.getElementById('max').textContent = max;
     });
+
+    function showError(message) {
+        document.getElementById('errorToastText').textContent = message;
+        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+        toast.show();
+    }
 
     // dialogページに遷移する際にソケットIDとルームIDを渡す
     socket.on('redirect', (url) => {
@@ -55,7 +76,9 @@
 
     // ルームが満員の時の処理
     socket.on('roomFull', () => {
-        alert('このルームは満員です。参加できません。');
-        window.location.href = '/';
+        showError('このルームは満員です。参加できません。');
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 2000);
     });
 </script>
