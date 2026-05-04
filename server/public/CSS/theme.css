@@ -193,6 +193,19 @@ body {
   color: #6fa8f5 !important;
 }
 
+#copyToast {
+    width: min(600px, 90vw);
+    max-width: 600px;
+    background-color: #1a1d25;
+    color: #4caf82;
+    border: 0.5px solid #2d6b4f !important;
+    box-shadow: 0 0 12px rgba(45, 107, 79, 0.7), 0 0 24px rgba(45, 107, 79, 0.3);
+}
+
+#copyToast .btn-close {
+    filter: invert(1);
+}
+
 /* --- エージェントカード（debateページ、メンバー作成分を上書き） --- */
 .agent-a-card { background-color: #1a2535; border-left: 3px solid #3a7bd5; }
 .agent-b-card { background-color: #251a1a; border-left: 3px solid #c0392b; }
