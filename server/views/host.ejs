@@ -2,10 +2,9 @@
 
 <div class="container mt-5" style="max-width: 600px;">
     <div class="text-center mb-4">
-        <div class="px-4 py-3 mb-4 rounded-3" style="background:#f0f6ff; border-left: 4px solid #1f6988;">
-            <h2 class="fw-bold mb-0" style="color:#1f6988;">ルームを作成する</h2>
+        <div class="card hero-card px-4 py-3 mb-4 text-center">
+            <h2 class="fw-bold mb-0">ルームを作成する</h2>
         </div>
-        <p class="text-muted">参加者が揃ったらAIインタビューを開始してください</p>
     </div>
 
     <div class="card shadow-sm mb-4">
@@ -31,7 +30,10 @@
         <div class="card-body p-4">
             <h5 class="card-title text-primary"><i class="bi bi-people me-2"></i>参加状況</h5>
             <p class="card-text text-muted small">現在ロビーに参加している人数です</p>
-            <h2 class="text-center fw-bold"><span id="count">0</span><span class="fs-5 text-muted"> 人が参加中</span></h2>
+            <h2 class="text-center fw-bold">
+                <span id="count" style="color: #f0f0f0;">0</span>
+                <span style="color: #6fa8f5;"> / <span id="max">-</span></span>
+                <span class="fs-5 text-muted"> 人が参加中</span></h2>
         </div>
     </div>
 
@@ -52,6 +54,26 @@
     </div>
 </div>
 
+<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3">
+    <div id="copyToast" class="toast align-items-center border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body">
+                 ✓ コピーしました
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+
+    <div id="errorToast" class="toast align-items-center border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="errorToastMessage">
+                <i class="bi bi-exclamation-triangle me-2"></i><span id="errorToastText"></span>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
@@ -62,7 +84,8 @@
     });
 
     socket.on('updateCount', (count, max) => {
-        document.getElementById('count').textContent = count + ' / ' + max;
+        document.getElementById('count').textContent = count;
+        document.getElementById('max').textContent = max;
     });
 
     // dialogページに遷移する際にソケットIDとルームIDを渡す
@@ -70,25 +93,32 @@
         window.location.href = url + '?socketId=' + socket.id + '&roomId=' + '<%= roomId %>' + '&isHost=true';
     });
 
+    function showError(message) {
+        document.getElementById('errorToastText').textContent = message;
+        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+        toast.show();
+    }
+
     document.getElementById('startBtn').addEventListener('click', () => {
         const topic = document.getElementById('topicInput').value.trim();
         if (!topic) {
-            alert('議題・前提条件を入力してください');
+            showError('議題・前提条件を入力してください');
             return;
         }
         const countText = document.getElementById('count').textContent;
         const current = parseInt(countText.split('/')[0]);
         if (current < 2) {
-            alert('参加者が2人以上必要です');
+            showError('参加者が2人以上必要です');
             return;
         }
         socket.emit('start', roomId, topic);
     });
 
-    function copyUrl(id) {
+    function copyUrl (id) {
         const input = document.getElementById(id);
-        navigator.clipboard.writeText(input.value)
-            .then(() => alert('コピーしました'))
-            .catch(() => alert('コピーに失敗しました'));
+        navigator.clipboard.writeText(input.value);
+
+        const toast = new bootstrap.Toast(document.getElementById('copyToast'));
+        toast.show();
     }
 </script>

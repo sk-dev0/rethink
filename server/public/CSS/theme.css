@@ -12,9 +12,9 @@ body {
 /* --- カード --- */
 .card {
   background-color: #1a1d25;
-  border: 0.5px solid #2a2d35 !important;
+  border-color: #6C676E !important;
   border-radius: 12px !important;
-  box-shadow: none !important;
+  box-shadow: 0 0 12px rgba(108, 103, 110, 0.7), 0 0 24px rgba(108, 103, 110, 0.3) !important;
   transition: border-color 0.2s ease;
 }
 
@@ -52,7 +52,7 @@ body {
 .form-control:focus {
   background-color: #0f1117;
   border-color: #3a7bd5;
-  color: #6fa8f5;
+  color: #aaaaaa;
   box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.2);
 }
 
@@ -140,6 +140,7 @@ body {
 .hero-card {
   box-shadow: 0 0 12px rgba(108, 103, 110, 0.7), 0 0 24px rgba(108, 103, 110, 0.3) !important;
   border-color: #a855c8 !important;
+  color: #f0f0f0;
 }
 
 .participants-card {
@@ -203,6 +204,19 @@ body {
 }
 
 #copyToast .btn-close {
+    filter: invert(1);
+}
+
+#errorToast {
+    width: min(600px, 90vw);
+    max-width: 600px;
+    background-color: #1a1d25;
+    color: #ef5350;
+    border: 0.5px solid #c0392b !important;
+    box-shadow: 0 0 12px rgba(192, 57, 43, 0.7), 0 0 24px rgba(192, 57, 43, 0.3);
+}
+
+#errorToast .btn-close {
     filter: invert(1);
 }
 
