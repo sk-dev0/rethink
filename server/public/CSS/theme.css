@@ -1,0 +1,426 @@
+/* ===================================
+   Rethink — Dark Theme
+   Bootstrap 5 上書き + 独自スタイル
+=================================== */
+
+/* --- ベース --- */
+body {
+  background-color: #0f1117;
+  color: #e0e0e0;
+}
+
+/* --- カード --- */
+.card {
+  background-color: #1a1d25;
+  border-color: #6C676E !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 12px rgba(108, 103, 110, 0.7), 0 0 24px rgba(108, 103, 110, 0.3) !important;
+  transition: border-color 0.2s ease;
+}
+
+.card-title {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.card-text,
+.text-muted {
+  color: #888 !important;
+}
+
+/* --- ボーダーアクセント --- */
+.border-primary {
+  border-color: #3a7bd5 !important;
+  box-shadow: 0 0 12px rgba(58, 123, 213, 0.7), 0 0 24px rgba(58, 123, 213, 0.3) !important;
+}
+
+.border-success {
+  border-color: #2d6b4f !important;
+  box-shadow: 0 0 12px rgba(45, 107, 79, 0.7), 0 0 24px rgba(45, 107, 79, 0.3) !important;
+}
+
+.border-danger {
+  border-color: #c0392b !important;
+  box-shadow: 0 0 12px rgba(192, 57, 43, 0.7), 0 0 24px rgba(192, 57, 43, 0.3) !important;
+}
+
+.border-warning {
+  border-color: #c08a17 !important;
+  box-shadow: 0 0 12px rgba(192, 138, 23, 0.7), 0 0 24px rgba(192, 138, 23, 0.3) !important;
+}
+
+.border-info {
+  border-color: #0aa3c2 !important;
+  box-shadow: 0 0 12px rgba(10, 163, 194, 0.7), 0 0 24px rgba(10, 163, 194, 0.3) !important;
+}
+
+/* --- フォームコントロール（URLコピー欄など） --- */
+.form-control {
+  background-color: #0f1117;
+  border: 0.5px solid #2a2d35;
+  border-radius: 8px;
+  color: #aaaaaa;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.form-control:focus {
+  background-color: #0f1117;
+  border-color: #3a7bd5;
+  color: #aaaaaa;
+  box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.2);
+}
+
+.form-control[readonly] {
+  background-color: #0f1117;
+  opacity: 1;
+}
+
+/* --- ボタン --- */
+.btn-primary {
+  background-color: #1e3a5f;
+  border: 0.5px solid #3a7bd5;
+  color: #6fa8f5;
+  border-radius: 8px;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: #254a77;
+  border-color: #5a9bf5;
+  color: #90bfff;
+}
+
+.btn-success {
+  background-color: #1a3328;
+  border: 0.5px solid #2d6b4f;
+  color: #4caf82;
+  border-radius: 8px;
+}
+
+.btn-success:hover,
+.btn-success:focus {
+  background-color: #1f3f32;
+  border-color: #3d8b65;
+  color: #6fcf97;
+}
+
+.btn-outline-primary {
+  border-color: #2a2d35;
+  color: #888;
+  border-radius: 8px;
+}
+
+.btn-outline-primary:hover,
+.btn-check:checked + .btn-outline-primary {
+  background-color: #1e3a5f;
+  border-color: #3a7bd5;
+  color: #6fa8f5;
+}
+
+.btn-danger {
+  background-color: #3a1a1a;
+  border: 0.5px solid #c0392b;
+  color: #ef5350;
+  border-radius: 8px;
+}
+
+.btn-danger:hover,
+.btn-danger:focus {
+  background-color: #4a2020;
+  border-color: #e74c3c;
+  color: #ff6b6b;
+}
+
+.btn-danger:disabled {
+  background-color: #1a1d25;
+  border-color: #2a2d35;
+  color: #555;
+}
+
+.btn-dark {
+  background-color: #1a1d25;
+  border: 0.5px solid #6C676E;
+  color: #e0e0e0;
+  border-radius: 8px;
+}
+
+.btn-dark:hover {
+  background-color: #22252f;
+  border-color: #9b72d0;
+  color: #f0f0f0;
+}
+
+.btn-outline-dark {
+  border-color: #6C676E;
+  color: #e0e0e0;
+  border-radius: 8px;
+}
+
+.btn-outline-dark:hover {
+  background-color: #22252f;
+  border-color: #a855c8;
+  color: #c77de0;
+}
+
+/* --- ヘッダーバッジ（「ルーム入室中」などのタイトルバー） --- */
+.page-badge {
+  display: inline-block;
+  border: 0.5px solid #3a7bd5;
+  color: #6fa8f5;
+  font-size: 11px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  margin-bottom: 1rem;
+}
+
+/* --- ヒーローセクション（indexページ上部） --- */
+.hero-section {
+  text-align: center;
+  padding: 3rem 1.5rem 2rem;
+  border-bottom: 0.5px solid #2a2d35;
+  margin-bottom: 1.5rem;
+}
+
+.hero-section h2 {
+  font-size: 22px;
+  font-weight: 500;
+  color: #f0f0f0;
+  margin-bottom: 0.75rem;
+}
+
+.hero-section p {
+  font-size: 14px;
+  color: #888;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.hero-card {
+  box-shadow: 0 0 12px rgba(108, 103, 110, 0.7), 0 0 24px rgba(108, 103, 110, 0.3) !important;
+  border-color: #a855c8 !important;
+  color: #f0f0f0;
+}
+
+.participants-card {
+  box-shadow: 0 0 12px rgba(108, 103, 110, 0.7), 0 0 24px rgba(108, 103, 110, 0.3) !important;
+  border-color: #6C676E !important;
+}
+
+/* --- テキスト色 --- */
+.text-primary {
+  color: #6fa8f5 !important;
+}
+
+.text-success {
+  color: #4caf82 !important;
+}
+
+.text-warning {
+  color: #e6b84a !important;
+}
+
+.text-white {
+  color: #f0f0f0 !important;
+}
+
+/* --- アクセントドット（カードタイトル左の小丸） --- */
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.dot-blue  { background-color: #6fa8f5; }
+.dot-green { background-color: #4caf82; }
+.dot-amber { background-color: #e6b84a; }
+
+/* --- ナビゲーションバー（headerパーシャル用） --- */
+.navbar {
+  background-color: #0f1117 !important;
+  border-bottom: 0.5px solid #2a2d35;
+}
+
+.navbar-brand,
+.nav-link {
+  color: #e0e0e0 !important;
+}
+
+.nav-link:hover {
+  color: #6fa8f5 !important;
+}
+
+#copyToast, #completeToast {
+    width: min(600px, 90vw);
+    max-width: 600px;
+    background-color: #1a1d25;
+    color: #4caf82;
+    border: 0.5px solid #2d6b4f !important;
+    box-shadow: 0 0 12px rgba(45, 107, 79, 0.7), 0 0 24px rgba(45, 107, 79, 0.3);
+}
+
+#copyToast .btn-close, #completeToast .btn-close {
+    filter: invert(1);
+}
+
+#errorToast {
+    width: min(600px, 90vw);
+    max-width: 600px;
+    background-color: #1a1d25;
+    color: #ef5350;
+    border: 0.5px solid #c0392b !important;
+    box-shadow: 0 0 12px rgba(192, 57, 43, 0.7), 0 0 24px rgba(192, 57, 43, 0.3);
+}
+
+#errorToast .btn-close {
+    filter: invert(1);
+}
+
+#waitingToast {
+  background-color: #1a1d25;
+  color: #6fa8f5;
+  border: 0.5px solid #3a7bd5 !important;
+  box-shadow: 0 0 12px rgba(58, 123, 213, 0.7), 0 0 24px rgba(58, 123, 213, 0.3);
+}
+
+#endAlert {
+  border-color: #2d6b4f !important;
+  box-shadow: 0 0 12px rgba(45, 107, 79, 0.7), 0 0 24px rgba(45, 107, 79, 0.3) !important;
+  color: #4caf82;
+}
+
+#messages {
+  background-color: #22252f !important;
+}
+
+.message-ai {
+  background-color: #32364a;
+  color: #f0f0f0;
+}
+
+.message-user {
+  background-color: #2a4a6f;
+  color: #f0f0f0
+}
+
+/* --- エージェントカード（debateページ、メンバー作成分を上書き） --- */
+.agent-a-card { background-color: #1a2535; border-left: 3px solid #3a7bd5; }
+.agent-b-card { background-color: #251a1a; border-left: 3px solid #c0392b; }
+.agent-c-card { background-color: #1a2520; border-left: 3px solid #2d6b4f; }
+.agent-d-card { background-color: #252018; border-left: 3px solid #c08a17; }
+.agent-e-card { background-color: #1a2428; border-left: 3px solid #0aa3c2; }
+.agent-f-card { background-color: #1e1e22; border-left: 3px solid #555; }
+.agent-x-card { background-color: #1a1a1e; border-left: 3px solid #444; }
+
+#summaryReportSection .card {
+  border-color: #a855c8 !important;
+  box-shadow: 0 0 12px rgba(168, 85, 200, 0.7), 0 0 24px rgba(168, 85, 200, 0.3) !important;
+}
+
+#summaryReportSection .card-header {
+  background-color: transparent !important;
+  border-bottom: 0.5px solid #a855c8;
+  color: #c77de0;
+}
+
+#summaryContent {
+  color: #e0e0e0;
+}
+
+/* --- まとめの目次部分 --- */
+.debate-index-shell {
+  background-color: #1a1d25;
+  border: 0.5px solid #2a2d35;
+  border-radius: 12px;
+}
+
+.debate-index-kicker {
+  background: rgba(168, 85, 200, 0.1);
+  color: #c77de0;
+  border: 0.5px solid #a855c8;
+}
+
+.debate-index-title {
+  color: #f0f0f0;
+}
+
+.debate-index-text {
+  color: #888;
+}
+
+.debate-index-card {
+  background: #22252f;
+  border: 0.5px solid #2a2d35;
+  border-radius: 12px;
+}
+
+.debate-index-card:hover {
+  border-color: #a855c8;
+  box-shadow: 0 0 12px rgba(168, 85, 200, 0.3);
+}
+
+.debate-index-card.is-active {
+  border-color: #a855c8;
+  box-shadow: 0 0 12px rgba(168, 85, 200, 0.5);
+}
+
+.debate-index-icon {
+  background: rgba(168, 85, 200, 0.1);
+  color: #c77de0;
+}
+
+.debate-index-phase {
+  color: #888;
+}
+
+.debate-index-card-title {
+  color: #e0e0e0;
+}
+
+.debate-index-card-text {
+  color: #888;
+}
+
+/* --- まとめのアコーディオン --- */
+.accordion-item {
+  background-color: #22252f;
+  border-color: #2a2d35;
+}
+
+.accordion-button {
+  background-color: #22252f;
+  color: #e0e0e0;
+}
+
+.accordion-button:not(.collapsed) {
+  background-color: #2a2d3a;
+  color: #c77de0;
+  box-shadow: none;
+  border-left: 3px solid #a855c8;
+}
+
+.accordion-button::after {
+  filter: invert(1);
+}
+
+.accordion-body {
+  background-color: #22252f;
+  color: #e0e0e0;
+}
+
+/* --- まとめの最終ページ --- */
+#phase4Content .badge.bg-primary {
+  background-color: transparent !important;
+  border: 1px solid #6fa8f5;
+  color: #6fa8f5;
+}
+
+#phase4Content .badge.bg-success {
+  background-color: transparent !important;
+  border: 1px solid #4caf82;
+  color: #4caf82;
+}
