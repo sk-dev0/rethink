@@ -103,6 +103,26 @@ body {
   color: #6fa8f5;
 }
 
+.btn-danger {
+  background-color: #3a1a1a;
+  border: 0.5px solid #c0392b;
+  color: #ef5350;
+  border-radius: 8px;
+}
+
+.btn-danger:hover,
+.btn-danger:focus {
+  background-color: #4a2020;
+  border-color: #e74c3c;
+  color: #ff6b6b;
+}
+
+.btn-danger:disabled {
+  background-color: #1a1d25;
+  border-color: #2a2d35;
+  color: #555;
+}
+
 /* --- ヘッダーバッジ（「ルーム入室中」などのタイトルバー） --- */
 .page-badge {
   display: inline-block;
@@ -218,6 +238,33 @@ body {
 
 #errorToast .btn-close {
     filter: invert(1);
+}
+
+#waitingToast {
+  background-color: #1a1d25;
+  color: #6fa8f5;
+  border: 0.5px solid #3a7bd5 !important;
+  box-shadow: 0 0 12px rgba(58, 123, 213, 0.7), 0 0 24px rgba(58, 123, 213, 0.3);
+}
+
+#endAlert {
+  border-color: #2d6b4f !important;
+  box-shadow: 0 0 12px rgba(45, 107, 79, 0.7), 0 0 24px rgba(45, 107, 79, 0.3) !important;
+  color: #4caf82;
+}
+
+#messages {
+  background-color: #22252f !important;
+}
+
+.message-ai {
+  background-color: #32364a;
+  color: #f0f0f0;
+}
+
+.message-user {
+  background-color: #2a4a6f;
+  color: #f0f0f0
 }
 
 /* --- エージェントカード（debateページ、メンバー作成分を上書き） --- */
