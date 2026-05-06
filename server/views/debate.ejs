@@ -15,10 +15,10 @@
   }
 
   .debate-index-shell {
-    border: 1px solid rgba(0, 0, 0, 0.125);
+    border: 0.5px solid #a855c8;
+    box-shadow: 0 0 12px rgba(168, 85, 200, 0.4), 0 0 24px rgba(168, 85, 200, 0.2);
     border-radius: 0.75rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    background: #fff;
+    background: #1a1d25; 
   }
 
   .debate-index-header {
@@ -55,7 +55,7 @@
   .debate-index-text {
     margin: 0;
     max-width: 680px;
-    color: #5f6b76;
+    color: #888;
     line-height: 1.7;
   }
 
@@ -69,9 +69,9 @@
     min-width: 0;
     width: 100%;
     padding: 1.25rem;
-    border: 1px solid rgba(17, 17, 17, 0.12);
+    border: 0.5px solid #2a2d35;
     border-radius: 1rem;
-    background: linear-gradient(180deg, #fff 0%, #f8fbfc 100%);
+    background: #22252f;
     box-shadow: 0 10px 24px rgba(15, 50, 66, 0.06);
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     cursor: pointer;
@@ -128,12 +128,12 @@
     font-size: 1.05rem;
     font-weight: 700;
     line-height: 1.4;
-    color: #111;
+    color: #e0e0e0;
   }
 
   .debate-index-card-text {
     margin: 0;
-    color: #5f6b76;
+    color: #888;
     font-size: 0.95rem;
     line-height: 1.7;
   }
@@ -141,10 +141,10 @@
   .debate-phase-section {
     /* コメント: 各フェーズ結果全体を目次と同系統のカードUIで囲む */
     padding: 1.5rem;
-    border: 1px solid rgba(0, 0, 0, 0.125);
+    border: 0.5px solid #a855c8 !important;
     border-radius: 0.75rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    background: #fff;
+    box-shadow: 0 0 12px rgba(168, 85, 200, 0.4), 0 0 24px rgba(168, 85, 200, 0.2) !important;
+    background: #1a1d25;
     scroll-margin-top: 1.5rem;
   }
 
@@ -161,29 +161,29 @@
 
   .debate-phase-description {
     margin: -0.35rem 0 1rem;
-    color: #5f6b76;
+    color: #e0e0e0 !important;
     line-height: 1.7;
   }
 
   .debate-step-guide {
     margin-bottom: 1rem;
     padding: 1rem 1.25rem;
-    border: 1px solid rgba(17, 17, 17, 0.1);
+    border: 0.5px solid #2a2d35;
     border-radius: 0.75rem;
-    background: #f8fbfc;
+    background: #22252f;
   }
 
   .debate-step-guide-title {
     margin-bottom: 0.75rem;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #1f6988;
+    color: #c77de0;
   }
 
   .debate-step-guide-list {
     margin: 0;
     padding-left: 1.2rem;
-    color: #5f6b76;
+    color: #e0e0e0 !important;
   }
 
   .debate-step-guide-list li + li {
@@ -234,11 +234,9 @@
     <button id="addAgentBtn" style="display:none;"></button>
 
     <div class="text-center mb-5">
-        <div class="card border-primary">
-            <div class="card-header bg-primary text-white fw-bold">
-                <i class="bi bi-chat-square-text me-2"></i>議題
-            </div>
-            <div class="card-body py-3">
+        <div class="card hero-card">
+            <div class="card-body py-3 text-center">
+                <p class="small mb-1"><i class="bi bi-chat-square-text me-2"></i>議題</p>
                 <div class="fw-bold mb-0" id="topicDisplay"></div>
             </div>
         </div>
@@ -285,10 +283,18 @@
     <button id="startBtn" class="btn btn-dark btn-lg w-100 rounded-pill">
         <i class="bi bi-play-fill me-2"></i>議論を開始する
     </button>
-    <button id="debateCompletedBtn" class="btn btn-success btn-lg w-100 rounded-pill mt-2" disabled hidden>議論が完了しました</button>
+    <div id="debateCompletedBtn" class="card text-center" style="border-color: #a855c8 !important; box-shadow: 0 0 12px rgba(168, 85, 200, 0.7), 0 0 24px rgba(168, 85, 200, 0.3);" hidden>
+        <div class="card-body py-3">
+            <i class="bi bi-check-circle-fill me-2" style="color: #c77de0; font-size: 1.2rem;"></i>
+            <span style="color: #c77de0;">議論が完了しました</span>
+        </div>
+    </div>
     <% } else { %>
-    <div id="guestMsg" class="alert alert-info text-center">
-        <i class="bi bi-hourglass-split me-2"></i>ホストが議論を開始するまでお待ちください
+    <div id="guestMsg" class="card border-info text-center">
+        <div class="card-body">
+            <i class="bi bi-hourglass-split me-2 text-info"></i>
+            <span class="text-white">ホストが議論を開始するまでお待ちください</span>
+        </div>
     </div>
     <button id="startBtn" style="display:none;"></button>
     <% } %>
@@ -316,8 +322,8 @@
   <!-- コメント: debate.ejs と同じ id を維持したマインドマップ表示領域。overview では summary の直下に表示する -->
   <section id="mindmapOverviewSection" class="debate-mindmap-section d-none mb-4">
     <!-- コメント: 議論フェーズ全体を俯瞰するマインドマップ -->
-    <div class="card border-success shadow-sm">
-      <div class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
+    <div class="card hero-card">
+      <div class="card-header fw-semibold ..." style="background-color: transparent; border-bottom: 0.5px solid #a855c8; color: #c77de0;">
         <span>マインドマップ1（議論フェーズ）</span>
         <button id="downloadMindmapBtn" class="btn btn-sm btn-light d-none" type="button">
           画像を保存（PNG）
@@ -332,8 +338,8 @@
     </div>
 
     <!-- コメント: 統合フェーズの整理結果を別マインドマップとして表示 -->
-    <div class="card border-success shadow-sm">
-      <div class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
+    <div class="card hero-card">
+      <div class="card-header fw-semibold ..." style="background-color: transparent; border-bottom: 0.5px solid #a855c8; color: #c77de0;">
         <span>マインドマップ2（統合フェーズ）</span>
         <button id="downloadMindmap2Btn" class="btn btn-sm btn-light d-none" type="button">
           画像を保存（PNG）

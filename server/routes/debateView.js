@@ -6,15 +6,6 @@ router.get('/', (req, res) => {
     res.render('debate');
 });
 
-// ここで生成したプロフィールを渡すようにした
-router.get('/:roomId', (req, res) => {
-    const roomId = req.params.roomId;
-    const profiles = roomProfiles[roomId] || [];
-    const topic = roomThemes[roomId] || '';
-    const isHost = req.query.isHost === 'true';
-    res.render('debate', { profiles, topic, isHost, roomId});
-});
-
 // テスト用ルート
 router.get('/debug', (req, res) => {
     const dummyProfiles = [
@@ -48,7 +39,16 @@ router.get('/debug', (req, res) => {
         }
     ];
     const topic = '授業にスマホの使用を認めるべきか';
-    res.render('debate', { profiles: dummyProfiles, topic });
+    res.render('debate', { profiles: dummyProfiles, topic, isHost: true, roomId: 'debug-room' });
+});
+
+// ここで生成したプロフィールを渡すようにした
+router.get('/:roomId', (req, res) => {
+    const roomId = req.params.roomId;
+    const profiles = roomProfiles[roomId] || [];
+    const topic = roomThemes[roomId] || '';
+    const isHost = req.query.isHost === 'true';
+    res.render('debate', { profiles, topic, isHost, roomId});
 });
 
 module.exports = router;

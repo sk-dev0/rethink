@@ -599,7 +599,7 @@ const startDebate = async () => {
     document.getElementById('resultArea').classList.add('d-none');
 
     try {
-        const res = await fetch('/api/debate/start', {
+        const res = await fetch('/api/debate/start/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic, agents, maxTurns, roomId: window.roomId }),
@@ -624,6 +624,7 @@ const startDebate = async () => {
         await renderMindmap('mindmapContent', 'downloadMindmapBtn', data.mindmap1);
         await renderMindmap('mindmapContent2', 'downloadMindmap2Btn', data.mindmap2);
         document.getElementById('debateCompletedBtn').removeAttribute('hidden');
+        document.getElementById('startBtn').style.display = 'none';
     } catch (err) {
         alert('エラーが発生しました: ' + err.message);
         console.error(err);
