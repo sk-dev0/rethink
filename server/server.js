@@ -52,17 +52,13 @@ const waitingRoutes = require('./routes/waiting');
 app.use('/waiting', waitingRoutes);
 
 app.use((req, res) => {
-    res.status(404).send(`
-        <div style="font-family: sans-serif; text-align: center; margin-top: 100px;">
-            <div style="display: inline-block; padding: 40px 60px; border: 2px solid #dee2e6; border-radius: 12px;">
-                <h1 style="font-size: 72px; margin: 0;">404</h1>
-                <h2>ページが見つかりません</h2>
-                <p style="color: gray;">正しいURLでやり直してください。</p>
-                <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 24px; background: #0d6efd; color: white; border-radius: 8px; text-decoration: none;">トップに戻る</a>
-            </div>
-        </div>
-    `);
+    res.status(404).render('404');
 });
+
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).render('error');
+}) 
 
 io.on('connection', (socket) => {
     console.log('接続されました:', socket.id);
