@@ -9,6 +9,7 @@ const { Server } = require('socket.io');
 const session = require('express-session');
 const { createSession, getSession, deleteSession, startChat, sendMessage, generateProfile } = require('./services/geminiClient');
 const { roomTotals, roomProfiles, roomThemes, roomMaxParticipants, socketRooms, completedSockets, roomHosted, roomResults } = require('./store');
+const helmet = require('helmet');
 
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +20,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(helmet({
+    contentSecurityPolicy: false,
+}));
 app.use(express.json());
 app.use(session({
     secret: process.env.SESSION_SECRET,
