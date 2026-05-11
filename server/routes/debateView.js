@@ -2,8 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { roomResults, roomProfiles, roomThemes } = require('../store');
 
-router.get('/', (req, res) => {
-    res.render('debate');
+router.get('/', (req, res, next) => {
+    try {
+        res.render('debate');
+    } catch (err) {
+        next(err);
+    }
 });
 
 // テスト用ルート
@@ -43,12 +47,16 @@ router.get('/debug', (req, res) => {
 });
 
 // ここで生成したプロフィールを渡すようにした
-router.get('/:roomId', (req, res) => {
-    const roomId = req.params.roomId;
-    const profiles = roomProfiles[roomId] || [];
-    const topic = roomThemes[roomId] || '';
-    const isHost = req.query.isHost === 'true';
-    res.render('debate', { profiles, topic, isHost, roomId});
+router.get('/:roomId', (req, res, next) => {
+    try {
+        const roomId = req.params.roomId;
+        const profiles = roomProfiles[roomId] || [];
+        const topic = roomThemes[roomId] || '';
+        const isHost = req.query.isHost === 'true';
+        res.render('debate', { profiles, topic, isHost, roomId });
+    } catch (err) {
+        next(err);
+    }
 });
 
 module.exports = router;
